@@ -29,3 +29,9 @@ def create_user(
     db.refresh(user)
 
     return user
+def get_all_users(db: Session) -> list[User]:
+    statement = select(User).order_by(User.id)
+    return list(db.scalars(statement).all())
+def get_all_users(db: Session) -> list[User]:
+    statement = select(User).order_by(User.id)
+    return list(db.scalars(statement).all())

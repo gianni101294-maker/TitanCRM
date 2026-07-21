@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from backend.app.auth.dependencies import get_current_user
+from backend.app.auth.dependencies import get_current_user, require_admin
 from backend.app.database.database import get_db
 from backend.app.models.user import User
 from backend.app.schemas.user import UserCreate, UserResponse
-from backend.app.services.user_service import register_user
+from backend.app.services.user_service import list_users, register_user
+
 
 router = APIRouter(
     prefix="/users",
@@ -29,6 +30,17 @@ def create_user(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(error),
         ) from error
+
+
+@router.get(
+    "",
+    response_model=list[UserResponse],
+)
+def read_users(
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(require_admin),
+):
+    return list_users(db)
 
 
 @router.get(
