@@ -1,21 +1,26 @@
 from fastapi import FastAPI
 
+from backend.app.api.users import router as users_router
+
+
 app = FastAPI(
     title="Titan CRM API",
-    description="API del sistema Titan CRM",
-    version="0.1.0"
+    version="1.0.0",
 )
+
+
+app.include_router(users_router)
+
 
 @app.get("/")
 def root():
     return {
-        "message": "¡Bienvenido a Titan CRM!"
+        "message": "Titan CRM API funcionando",
     }
 
+
 @app.get("/health")
-def health():
+def health_check():
     return {
         "status": "ok",
-        "service": "Titan CRM",
-        "version": "0.1.0"
     }
