@@ -1,4 +1,8 @@
 from logging.config import fileConfig
+from backend.app.models.user import User
+from backend.app.models.customer import Customer
+from backend.app.models.opportunity import Opportunity
+from backend.app.models.activity import Activity
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
