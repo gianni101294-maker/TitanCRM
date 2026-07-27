@@ -3,6 +3,7 @@ from backend.app.models.user import User
 from backend.app.models.customer import Customer
 from backend.app.models.opportunity import Opportunity
 from backend.app.models.activity import Activity
+from backend.app.core.config import settings
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -12,6 +13,11 @@ from alembic import context
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+config.set_main_option(
+    "sqlalchemy.url",
+    settings.DATABASE_URL,
+)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
