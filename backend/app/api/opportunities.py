@@ -18,7 +18,6 @@ from backend.app.services.opportunity_service import (
     remove_opportunity,
 )
 
-
 router = APIRouter(
     prefix="/opportunities",
     tags=["Opportunities"],

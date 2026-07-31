@@ -17,7 +17,6 @@ from backend.app.services.customer_service import (
     remove_customer,
 )
 
-
 router = APIRouter(
     prefix="/customers",
     tags=["Customers"],

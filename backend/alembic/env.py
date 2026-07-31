@@ -1,14 +1,10 @@
 from logging.config import fileConfig
-from backend.app.models.user import User
-from backend.app.models.customer import Customer
-from backend.app.models.opportunity import Opportunity
-from backend.app.models.activity import Activity
-from backend.app.core.config import settings
-
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
 
 from alembic import context
+from sqlalchemy import engine_from_config, pool
+
+from backend.app.core.config import settings
+from backend.app.database.base import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -28,8 +24,6 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from backend.app.database.base import Base
-from backend.app.models.user import User
 
 target_metadata = Base.metadata
 

@@ -1,13 +1,12 @@
 from fastapi import FastAPI
 
-from backend.app.api.users import router as users_router
+from backend.app.api.activities import router as activities_router
 from backend.app.api.auth import router as auth_router
+from backend.app.api.customers import router as customers_router
 from backend.app.api.dashboard import router as dashboard_router
 from backend.app.api.opportunities import router as opportunities_router
 from backend.app.api.pipeline import router as pipeline_router
-from backend.app.api.customers import router as customers_router
-from backend.app.api.activities import router as activities_router
-
+from backend.app.api.users import router as users_router
 
 app = FastAPI(
     title="Titan CRM API",

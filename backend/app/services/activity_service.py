@@ -1,9 +1,10 @@
+from datetime import UTC, datetime
+
 from sqlalchemy.orm import Session
 
 from backend.app.models.activity import Activity
 from backend.app.models.customer import Customer
 from backend.app.schemas.activity import ActivityCreate, ActivityUpdate
-from datetime import datetime, timezone
 
 
 def get_activities(
@@ -36,7 +37,7 @@ def get_activities_by_customer(
 def get_overdue_activities(
     db: Session,
 ) -> list[Activity]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     return (
         db.query(Activity)
@@ -48,7 +49,7 @@ def get_overdue_activities(
 def get_upcoming_activities(
     db: Session,
 ) -> list[Activity]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     return (
         db.query(Activity)
@@ -60,7 +61,7 @@ def get_upcoming_activities(
 def get_activity_summary(
     db: Session,
 ) -> dict:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     total = db.query(Activity).count()
 

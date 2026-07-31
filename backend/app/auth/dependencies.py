@@ -7,7 +7,6 @@ from backend.app.database.database import get_db
 from backend.app.models.user import User
 from backend.app.repositories.user_repository import get_user_by_email
 
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 

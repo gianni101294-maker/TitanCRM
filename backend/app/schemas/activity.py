@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -7,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 class ActivityBase(BaseModel):
     title: str
     activity_type: str
-    description: Optional[str] = None
+    description: str | None = None
     scheduled_at: datetime
     status: str = "pending"
     customer_id: int
@@ -18,12 +17,12 @@ class ActivityCreate(ActivityBase):
 
 
 class ActivityUpdate(BaseModel):
-    title: Optional[str] = None
-    activity_type: Optional[str] = None
-    description: Optional[str] = None
-    scheduled_at: Optional[datetime] = None
-    status: Optional[str] = None
-    customer_id: Optional[int] = None
+    title: str | None = None
+    activity_type: str | None = None
+    description: str | None = None
+    scheduled_at: datetime | None = None
+    status: str | None = None
+    customer_id: int | None = None
 
 
 class ActivityResponse(ActivityBase):

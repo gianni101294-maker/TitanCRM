@@ -7,7 +7,6 @@ from backend.app.models.user import User
 from backend.app.schemas.user import UserCreate, UserResponse
 from backend.app.services.user_service import list_users, register_user
 
-
 router = APIRouter(
     prefix="/users",
     tags=["Users"],

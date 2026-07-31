@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from backend.app.database.database import get_db
 from backend.app.auth.dependencies import get_current_user
+from backend.app.database.database import get_db
 from backend.app.models.user import User
 from backend.app.schemas.activity import (
     ActivityCreate,
@@ -21,7 +21,6 @@ from backend.app.services.activity_service import (
     get_upcoming_activities,
     update_activity,
 )
-
 
 router = APIRouter(
     prefix="/activities",

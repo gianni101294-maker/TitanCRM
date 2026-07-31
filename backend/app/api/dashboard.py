@@ -7,7 +7,6 @@ from backend.app.models.user import User
 from backend.app.schemas.dashboard import DashboardResponse
 from backend.app.services.dashboard import get_dashboard
 
-
 router = APIRouter(
     prefix="/dashboard",
     tags=["Dashboard"],

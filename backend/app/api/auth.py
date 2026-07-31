@@ -6,7 +6,6 @@ from backend.app.database.database import get_db
 from backend.app.schemas.auth import TokenResponse
 from backend.app.services.auth_service import authenticate_user
 
-
 router = APIRouter(
     prefix="/auth",
     tags=["Authentication"],
