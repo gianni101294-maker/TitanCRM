@@ -51,5 +51,12 @@ jobs:
       - name: Run database migrations
         run: alembic upgrade head
 
-      - name: Run tests
-        run: pytest -v
+            - name: Run Ruff
+        run: ruff check .
+
+      - name: Run tests with coverage
+        run: >
+          pytest
+          --cov=backend/app
+          --cov-report=term-missing
+          --cov-fail-under=90
