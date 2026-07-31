@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Alert,
   Box,
@@ -13,6 +14,8 @@ import {
 import { login } from "../api/auth";
 
 export function LoginPage() {
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -32,7 +35,7 @@ export function LoginPage() {
         data.access_token,
       );
 
-      alert("Inicio de sesión correcto");
+      navigate("/dashboard");
     } catch {
       setErrorMessage("Correo o contraseña incorrectos.");
     } finally {
@@ -54,21 +57,21 @@ export function LoginPage() {
       <Card sx={{ width: "100%", maxWidth: 420 }}>
         <CardContent sx={{ padding: 4 }}>
           <Typography
-           variant="h4"
-           align="center"
-           sx={{
-           fontWeight: "bold",
-           mb: 1,
-           }}
+            variant="h4"
+            align="center"
+            sx={{
+              fontWeight: "bold",
+              mb: 1,
+            }}
           >
             🚀 TitanCRM
           </Typography>
 
           <Typography
-           align="center"
-           color="text.secondary"
-           sx={{ mb: 4 }}
-          > 
+            align="center"
+            color="text.secondary"
+            sx={{ mb: 4 }}
+          >
             Gestión Inteligente de Clientes
           </Typography>
 
