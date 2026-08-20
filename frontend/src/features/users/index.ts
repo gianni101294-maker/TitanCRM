@@ -1,5 +1,4 @@
 export {
-  authenticateUser,
   createUser,
   deleteUser,
   getUsers,
