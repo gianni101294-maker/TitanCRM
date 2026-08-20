@@ -11,6 +11,8 @@ from app.schemas.activity import (
     ActivityUpdate,
 )
 
+from app.services.opportunity_event_service import create_opportunity_event
+
 
 def get_activity_by_id(
     db: Session,
@@ -240,6 +242,7 @@ def get_activity_summary(
 def create_activity(
     db: Session,
     activity_data: ActivityCreate,
+    user_id: int | None = None,
 ) -> Activity:
     customer = get_customer_by_id(
         db,
@@ -268,20 +271,39 @@ def create_activity(
     )
 
     db.add(activity)
+    db.flush()
+
+    if activity.opportunity_id is not None:
+        create_opportunity_event(
+            db,
+            opportunity_id=activity.opportunity_id,
+            event_type="activity_created",
+            title="Actividad creada",
+            description=(
+                f"Se creó la actividad «{activity.title}»."
+            ),
+            user_id=user_id,
+            commit=False,
+        )
+
     db.commit()
     db.refresh(activity)
 
     return activity
 
-
 def update_activity(
     db: Session,
     activity: Activity,
     activity_data: ActivityUpdate,
+    user_id: int | None = None,
 ) -> Activity:
     update_data = activity_data.model_dump(
         exclude_unset=True,
     )
+
+    old_title = activity.title
+    old_status = activity.status
+    old_opportunity_id = activity.opportunity_id
 
     target_customer_id = update_data.get(
         "customer_id",
@@ -310,9 +332,10 @@ def update_activity(
     )
 
     if "title" in update_data:
-        update_data["title"] = (
-            update_data["title"].strip()
-        )
+        title = update_data["title"]
+
+        if title is not None:
+            update_data["title"] = title.strip()
 
     for field, value in update_data.items():
         setattr(
@@ -321,11 +344,73 @@ def update_activity(
             value,
         )
 
+    db.flush()
+
+    event_opportunity_id = (
+        activity.opportunity_id
+        or old_opportunity_id
+    )
+
+    if event_opportunity_id is not None:
+        became_completed = (
+            old_status != "completed"
+            and activity.status == "completed"
+        )
+
+        if became_completed:
+            create_opportunity_event(
+                db,
+                opportunity_id=event_opportunity_id,
+                event_type="activity_completed",
+                title="Actividad completada",
+                description=(
+                    f"Se completó la actividad "
+                    f"«{activity.title}»."
+                ),
+                user_id=user_id,
+                commit=False,
+            )
+        else:
+            changed_fields = []
+
+            labels = {
+                "title": "Título",
+                "activity_type": "Tipo",
+                "description": "Descripción",
+                "scheduled_at": "Fecha programada",
+                "status": "Estado",
+                "customer_id": "Cliente",
+                "opportunity_id": "Oportunidad",
+            }
+
+            for field in update_data:
+                changed_fields.append(
+                    labels.get(field, field)
+                )
+
+            if changed_fields:
+                description = (
+                    "Se actualizó la actividad "
+                    f"«{old_title}». "
+                    "Campos modificados: "
+                    + ", ".join(changed_fields)
+                    + "."
+                )
+
+                create_opportunity_event(
+                    db,
+                    opportunity_id=event_opportunity_id,
+                    event_type="activity_updated",
+                    title="Actividad actualizada",
+                    description=description,
+                    user_id=user_id,
+                    commit=False,
+                )
+
     db.commit()
     db.refresh(activity)
 
     return activity
-
 
 def delete_activity(
     db: Session,

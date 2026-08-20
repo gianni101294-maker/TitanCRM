@@ -102,3 +102,11 @@ class Opportunity(Base):
         back_populates="opportunity",
         passive_deletes=True,
     )
+
+    events = relationship(
+        "OpportunityEvent",
+        back_populates="opportunity",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="OpportunityEvent.created_at.desc()",
+    )

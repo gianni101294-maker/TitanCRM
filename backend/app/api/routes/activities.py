@@ -195,6 +195,7 @@ def create_new_activity(
         return create_activity(
             db,
             payload,
+            user_id=current_user.id,
         )
     except ValueError as error:
         raise HTTPException(
@@ -232,6 +233,7 @@ def edit_activity(
             db,
             activity,
             payload,
+            user_id=current_user.id,
         )
     except ValueError as error:
         raise HTTPException(

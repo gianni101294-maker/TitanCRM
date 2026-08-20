@@ -10,11 +10,15 @@ from sqlalchemy.orm import Session
 from app.auth.permissions import AdminUser
 from app.auth.permissions import AuthenticatedCommercialUser
 from app.database.session import get_db
+from app.schemas.opportunity_event import OpportunityEventResponse
+
 from app.schemas.opportunity import (
     OpportunityCreate,
     OpportunityResponse,
     OpportunityUpdate,
 )
+from app.services.opportunity_event_service import get_opportunity_events
+
 from app.services.opportunity_service import (
     edit_opportunity,
     get_opportunity,
@@ -70,6 +74,35 @@ def get_one_opportunity(
 
 
 @router.get(
+    "/{opportunity_id}/events",
+    response_model=list[OpportunityEventResponse],
+)
+def get_events_for_opportunity(
+    opportunity_id: int,
+    db: Annotated[
+        Session,
+        Depends(get_db),
+    ],
+    current_user: AuthenticatedCommercialUser,
+):
+    try:
+        get_opportunity(
+            db,
+            opportunity_id,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+
+    return get_opportunity_events(
+        db,
+        opportunity_id,
+    )
+
+
+@router.get(
     "/customer/{customer_id}",
     response_model=list[OpportunityResponse],
 )
@@ -110,6 +143,7 @@ def create_new_opportunity(
         return register_opportunity(
             db,
             payload,
+            user_id=current_user.id,
         )
     except ValueError as error:
         raise HTTPException(
@@ -136,6 +170,7 @@ def update_existing_opportunity(
             db,
             opportunity_id,
             payload,
+            user_id=current_user.id,
         )
     except ValueError as error:
         raise HTTPException(

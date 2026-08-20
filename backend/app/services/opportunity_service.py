@@ -8,6 +8,10 @@ from app.schemas.opportunity import (
     OpportunityUpdate,
 )
 
+from app.services.opportunity_event_service import (
+    create_opportunity_event,
+)
+
 
 def get_opportunity_by_id(
     db: Session,
@@ -95,6 +99,7 @@ def get_opportunity(
 def register_opportunity(
     db: Session,
     opportunity_data: OpportunityCreate,
+    user_id: int | None = None,
 ) -> Opportunity:
     customer = get_customer_by_id(
         db,
@@ -123,6 +128,21 @@ def register_opportunity(
     )
 
     db.add(opportunity)
+    db.flush()
+
+    create_opportunity_event(
+        db=db,
+        opportunity_id=opportunity.id,
+        event_type="created",
+        title="Oportunidad creada",
+        description=(
+            f"Se creó la oportunidad "
+            f"«{opportunity.title}»."
+        ),
+        user_id=user_id,
+        commit=False,
+    )
+
     db.commit()
     db.refresh(opportunity)
 
@@ -133,6 +153,7 @@ def edit_opportunity(
     db: Session,
     opportunity_id: int,
     opportunity_data: OpportunityUpdate,
+    user_id: int | None = None,
 ) -> Opportunity:
     opportunity = get_opportunity(
         db,
@@ -162,11 +183,119 @@ def edit_opportunity(
             update_data["title"].strip()
         )
 
+    tracked_fields = {
+        "stage": (
+            "stage_changed",
+            "Etapa modificada",
+            "Etapa",
+        ),
+        "probability": (
+            "probability_changed",
+            "Probabilidad modificada",
+            "Probabilidad",
+        ),
+        "value": (
+            "value_changed",
+            "Valor modificado",
+            "Valor",
+        ),
+        "priority": (
+            "priority_changed",
+            "Prioridad modificada",
+            "Prioridad",
+        ),
+        "assigned_user_id": (
+            "assignee_changed",
+            "Responsable modificado",
+            "Responsable",
+        ),
+    }
+
+    changes = []
+
     for field, value in update_data.items():
+        old_value = getattr(
+            opportunity,
+            field,
+        )
+
+        if old_value != value:
+            changes.append(
+                (
+                    field,
+                    old_value,
+                    value,
+                )
+            )
+
         setattr(
             opportunity,
             field,
             value,
+        )
+
+    db.flush()
+
+    for field, old_value, new_value in changes:
+        event_config = tracked_fields.get(
+            field
+        )
+
+        if event_config is None:
+            continue
+
+        (
+            event_type,
+            event_title,
+            field_label,
+        ) = event_config
+
+        if field == "probability":
+            old_display = (
+                f"{old_value}%"
+                if old_value is not None
+                else "Sin definir"
+            )
+            new_display = (
+                f"{new_value}%"
+                if new_value is not None
+                else "Sin definir"
+            )
+        elif field == "value":
+            old_display = (
+                f"S/ {old_value}"
+                if old_value is not None
+                else "Sin definir"
+            )
+            new_display = (
+                f"S/ {new_value}"
+                if new_value is not None
+                else "Sin definir"
+            )
+        else:
+            old_display = (
+                str(old_value)
+                if old_value is not None
+                else "Sin definir"
+            )
+            new_display = (
+                str(new_value)
+                if new_value is not None
+                else "Sin definir"
+            )
+
+        create_opportunity_event(
+            db=db,
+            opportunity_id=opportunity.id,
+            event_type=event_type,
+            title=event_title,
+            description=(
+                f"{field_label}: "
+                f"{old_display} → "
+                f"{new_display}"
+            ),
+            user_id=user_id,
+            commit=False,
         )
 
     db.commit()
