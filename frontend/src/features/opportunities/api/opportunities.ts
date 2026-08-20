@@ -37,6 +37,17 @@ export interface Opportunity {
   created_at: string;
 }
 
+
+export interface OpportunityEvent {
+  id: number;
+  opportunity_id: number;
+  event_type: string;
+  title: string;
+  description: string | null;
+  user_id: number | null;
+  created_at: string;
+}
+
 export interface OpportunityCreate {
   title: string;
 
@@ -119,3 +130,15 @@ export async function deleteOpportunity(
     `/opportunities/${opportunityId}`,
   );
 }
+
+export async function getOpportunityEvents(
+  opportunityId: number,
+): Promise<OpportunityEvent[]> {
+  const response =
+    await client.get<OpportunityEvent[]>(
+      `/opportunities/${opportunityId}/events`,
+    );
+
+  return response.data;
+}
+

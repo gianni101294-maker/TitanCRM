@@ -28,3 +28,7 @@ export * from "./utils/opportunityStage";
 export {
   OpportunityDetailDialog,
 } from "./components/OpportunityDetailDialog";
+
+export {
+  OpportunityHistory,
+} from "./components/OpportunityHistory";

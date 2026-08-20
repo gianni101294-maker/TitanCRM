@@ -43,6 +43,10 @@ import {
   OpportunityActivities,
 } from "./OpportunityActivities";
 
+import {
+  OpportunityHistory,
+} from "./OpportunityHistory";
+
 interface OpportunityDetailDialogProps {
   open: boolean;
 
@@ -490,6 +494,12 @@ export function OpportunityDetailDialog({
           </Paper>
 
           <OpportunityActivities
+            opportunityId={
+              opportunity.id
+            }
+          />
+
+          <OpportunityHistory
             opportunityId={
               opportunity.id
             }
