@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.models.customer import Customer
 from app.models.opportunity import Opportunity
+from app.models.user import User
 from app.schemas.opportunity import (
     OpportunityCreate,
     OpportunityUpdate,
@@ -30,6 +31,17 @@ def get_customer_by_id(
 ) -> Customer | None:
     statement = select(Customer).where(
         Customer.id == customer_id,
+    )
+
+    return db.scalar(statement)
+
+
+def get_user_by_id(
+    db: Session,
+    user_id: int,
+) -> User | None:
+    statement = select(User).where(
+        User.id == user_id,
     )
 
     return db.scalar(statement)
@@ -184,6 +196,11 @@ def edit_opportunity(
         )
 
     tracked_fields = {
+        "title": (
+            "title_changed",
+            "Título modificado",
+            "Título",
+        ),
         "stage": (
             "stage_changed",
             "Etapa modificada",
@@ -204,10 +221,25 @@ def edit_opportunity(
             "Prioridad modificada",
             "Prioridad",
         ),
+        "expected_close_date": (
+            "close_date_changed",
+            "Fecha de cierre modificada",
+            "Fecha estimada de cierre",
+        ),
+        "notes": (
+            "notes_changed",
+            "Notas modificadas",
+            "Notas",
+        ),
         "assigned_user_id": (
             "assignee_changed",
             "Responsable modificado",
             "Responsable",
+        ),
+        "customer_id": (
+            "customer_changed",
+            "Cliente modificado",
+            "Cliente",
         ),
     }
 
@@ -327,12 +359,118 @@ def edit_opportunity(
                 else "Sin definir"
             )
 
+        elif field == "expected_close_date":
+            old_display = (
+                old_value.strftime(
+                    "%d/%m/%Y"
+                )
+                if old_value is not None
+                else "Sin fecha"
+            )
+
+            new_display = (
+                new_value.strftime(
+                    "%d/%m/%Y"
+                )
+                if new_value is not None
+                else "Sin fecha"
+            )
+
+        elif field == "assigned_user_id":
+            old_user = (
+                get_user_by_id(
+                    db,
+                    old_value,
+                )
+                if old_value is not None
+                else None
+            )
+
+            new_user = (
+                get_user_by_id(
+                    db,
+                    new_value,
+                )
+                if new_value is not None
+                else None
+            )
+
+            old_display = (
+                old_user.full_name
+                if old_user is not None
+                else "Sin responsable"
+            )
+
+            new_display = (
+                new_user.full_name
+                if new_user is not None
+                else "Sin responsable"
+            )
+
+        elif field == "customer_id":
+            old_customer = (
+                get_customer_by_id(
+                    db,
+                    old_value,
+                )
+                if old_value is not None
+                else None
+            )
+
+            new_customer = (
+                get_customer_by_id(
+                    db,
+                    new_value,
+                )
+                if new_value is not None
+                else None
+            )
+
+            old_display = (
+                old_customer.company_name
+                if old_customer is not None
+                else "Sin cliente"
+            )
+
+            new_display = (
+                new_customer.company_name
+                if new_customer is not None
+                else "Sin cliente"
+            )
+
+        elif field == "title":
+            old_display = (
+                f"«{old_value}»"
+                if old_value
+                else "Sin título"
+            )
+
+            new_display = (
+                f"«{new_value}»"
+                if new_value
+                else "Sin título"
+            )
+
+        elif field == "notes":
+            old_display = (
+                "Con notas"
+                if old_value
+                else "Sin notas"
+            )
+
+            new_display = (
+                "Con notas"
+                if new_value
+                else "Sin notas"
+            )
+
         else:
             old_display = (
                 str(old_value)
                 if old_value is not None
                 else "Sin definir"
             )
+
             new_display = (
                 str(new_value)
                 if new_value is not None
