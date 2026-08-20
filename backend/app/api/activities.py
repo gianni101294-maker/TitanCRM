@@ -15,6 +15,7 @@ from backend.app.services.activity_service import (
     delete_activity,
     get_activities,
     get_activities_by_customer,
+    get_activities_by_opportunity,
     get_activity_by_id,
     get_activity_summary,
     get_overdue_activities,
@@ -84,6 +85,27 @@ def activity_summary(
     current_user: User = Depends(get_current_user),
 ):
     return get_activity_summary(db)
+
+@router.get(
+    "/opportunity/{opportunity_id}",
+    response_model=list[ActivityResponse],
+)
+def list_activities_by_opportunity(
+    opportunity_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        return get_activities_by_opportunity(
+            db,
+            opportunity_id,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+
 
 @router.get(
     "/{activity_id}",

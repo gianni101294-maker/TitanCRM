@@ -1,24 +1,44 @@
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.app.repositories.opportunity_repository import (
-    get_all_opportunities,
+from app.models.opportunity import Opportunity
+
+
+PIPELINE_STAGES = (
+    "prospect",
+    "contacted",
+    "proposal",
+    "negotiation",
+    "won",
+    "lost",
 )
 
 
-def get_pipeline(db: Session) -> dict:
-    opportunities = get_all_opportunities(db)
+def get_pipeline(
+    db: Session,
+) -> dict[str, list[Opportunity]]:
+    statement = select(
+        Opportunity,
+    ).order_by(
+        Opportunity.id.desc(),
+    )
 
-    pipeline = {
-        "prospect": [],
-        "contacted": [],
-        "proposal": [],
-        "negotiation": [],
-        "won": [],
-        "lost": [],
+    opportunities = list(
+        db.scalars(statement).all(),
+    )
+
+    pipeline: dict[
+        str,
+        list[Opportunity],
+    ] = {
+        stage: []
+        for stage in PIPELINE_STAGES
     }
 
     for opportunity in opportunities:
         if opportunity.stage in pipeline:
-            pipeline[opportunity.stage].append(opportunity)
+            pipeline[
+                opportunity.stage
+            ].append(opportunity)
 
     return pipeline

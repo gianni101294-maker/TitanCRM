@@ -1,10 +1,23 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import (
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    func,
+)
+from sqlalchemy.orm import (
+    Mapped,
+    mapped_column,
+    relationship,
+)
 
-from backend.app.database.base import Base
+from app.database.base import Base
 
 
 class Opportunity(Base):
@@ -31,8 +44,44 @@ class Opportunity(Base):
         default="prospect",
     )
 
+    priority: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="medium",
+        server_default="medium",
+    )
+
+    probability: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=20,
+        server_default="20",
+    )
+
+    expected_close_date: Mapped[date | None] = mapped_column(
+        Date,
+        nullable=True,
+    )
+
+    notes: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    assigned_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey(
+            "users.id",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+        index=True,
+    )
+
     customer_id: Mapped[int] = mapped_column(
-        ForeignKey("customers.id", ondelete="CASCADE"),
+        ForeignKey(
+            "customers.id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
         index=True,
     )
@@ -46,4 +95,10 @@ class Opportunity(Base):
     customer = relationship(
         "Customer",
         back_populates="opportunities",
+    )
+
+    activities = relationship(
+        "Activity",
+        back_populates="opportunity",
+        passive_deletes=True,
     )

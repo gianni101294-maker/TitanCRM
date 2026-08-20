@@ -1,39 +1,77 @@
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.app.models.opportunity import Opportunity
-from backend.app.repositories.customer_repository import get_customer_by_id
-from backend.app.repositories.opportunity_repository import (
-    create_opportunity,
-    delete_opportunity,
-    get_all_opportunities,
-    get_opportunities_by_customer,
-    get_opportunity_by_id,
-    update_opportunity,
-)
-from backend.app.schemas.opportunity import (
+from app.models.customer import Customer
+from app.models.opportunity import Opportunity
+from app.schemas.opportunity import (
     OpportunityCreate,
     OpportunityUpdate,
 )
 
 
+def get_opportunity_by_id(
+    db: Session,
+    opportunity_id: int,
+) -> Opportunity | None:
+    statement = select(Opportunity).where(
+        Opportunity.id == opportunity_id,
+    )
+
+    return db.scalar(statement)
+
+
+def get_customer_by_id(
+    db: Session,
+    customer_id: int,
+) -> Customer | None:
+    statement = select(Customer).where(
+        Customer.id == customer_id,
+    )
+
+    return db.scalar(statement)
+
+
 def list_opportunities(
     db: Session,
 ) -> list[Opportunity]:
-    return get_all_opportunities(db)
+    statement = select(
+        Opportunity,
+    ).order_by(
+        Opportunity.id.desc(),
+    )
+
+    return list(
+        db.scalars(statement).all(),
+    )
 
 
 def list_customer_opportunities(
     db: Session,
     customer_id: int,
 ) -> list[Opportunity]:
-    customer = get_customer_by_id(db, customer_id)
-
-    if customer is None:
-        raise ValueError("Cliente no encontrado.")
-
-    return get_opportunities_by_customer(
+    customer = get_customer_by_id(
         db,
         customer_id,
+    )
+
+    if customer is None:
+        raise ValueError(
+            "Cliente no encontrado.",
+        )
+
+    statement = (
+        select(Opportunity)
+        .where(
+            Opportunity.customer_id
+            == customer_id,
+        )
+        .order_by(
+            Opportunity.id.desc(),
+        )
+    )
+
+    return list(
+        db.scalars(statement).all(),
     )
 
 
@@ -47,7 +85,9 @@ def get_opportunity(
     )
 
     if opportunity is None:
-        raise ValueError("Oportunidad no encontrada.")
+        raise ValueError(
+            "Oportunidad no encontrada.",
+        )
 
     return opportunity
 
@@ -63,13 +103,30 @@ def register_opportunity(
 
     if customer is None:
         raise ValueError(
-            "El cliente indicado no existe."
+            "El cliente indicado no existe.",
         )
 
-    return create_opportunity(
-        db,
-        opportunity_data,
+    opportunity = Opportunity(
+        title=opportunity_data.title.strip(),
+        value=opportunity_data.value,
+        stage=opportunity_data.stage,
+        priority=opportunity_data.priority,
+        probability=opportunity_data.probability,
+        expected_close_date=(
+            opportunity_data.expected_close_date
+        ),
+        notes=opportunity_data.notes,
+        assigned_user_id=(
+            opportunity_data.assigned_user_id
+        ),
+        customer_id=opportunity_data.customer_id,
     )
+
+    db.add(opportunity)
+    db.commit()
+    db.refresh(opportunity)
+
+    return opportunity
 
 
 def edit_opportunity(
@@ -82,22 +139,40 @@ def edit_opportunity(
         opportunity_id,
     )
 
-    if opportunity_data.customer_id is not None:
+    update_data = opportunity_data.model_dump(
+        exclude_unset=True,
+    )
+
+    if "customer_id" in update_data:
         customer = get_customer_by_id(
             db,
-            opportunity_data.customer_id,
+            update_data["customer_id"],
         )
 
         if customer is None:
             raise ValueError(
-                "El cliente indicado no existe."
+                "El cliente indicado no existe.",
             )
 
-    return update_opportunity(
-        db,
-        opportunity,
-        opportunity_data,
-    )
+    if (
+        "title" in update_data
+        and update_data["title"] is not None
+    ):
+        update_data["title"] = (
+            update_data["title"].strip()
+        )
+
+    for field, value in update_data.items():
+        setattr(
+            opportunity,
+            field,
+            value,
+        )
+
+    db.commit()
+    db.refresh(opportunity)
+
+    return opportunity
 
 
 def remove_opportunity(
@@ -109,7 +184,5 @@ def remove_opportunity(
         opportunity_id,
     )
 
-    delete_opportunity(
-        db,
-        opportunity,
-    )
+    db.delete(opportunity)
+    db.commit()

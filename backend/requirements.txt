@@ -35,3 +35,12 @@ httpx
 python-multipart==0.0.32
 ruff==0.16.1
 pytest-cov==7.1.0
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg[binary]
+pydantic-settings
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+email-validator

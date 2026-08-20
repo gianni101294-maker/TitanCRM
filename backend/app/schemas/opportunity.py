@@ -1,8 +1,13 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+)
+
 
 OpportunityStage = Literal[
     "prospect",
@@ -11,6 +16,13 @@ OpportunityStage = Literal[
     "negotiation",
     "won",
     "lost",
+]
+
+
+OpportunityPriority = Literal[
+    "low",
+    "medium",
+    "high",
 ]
 
 
@@ -27,6 +39,26 @@ class OpportunityBase(BaseModel):
     )
 
     stage: OpportunityStage = "prospect"
+
+    priority: OpportunityPriority = "medium"
+
+    probability: int = Field(
+        default=20,
+        ge=0,
+        le=100,
+    )
+
+    expected_close_date: date | None = None
+
+    notes: str | None = Field(
+        default=None,
+        max_length=5000,
+    )
+
+    assigned_user_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
 
     customer_id: int = Field(
         gt=0,
@@ -53,13 +85,35 @@ class OpportunityUpdate(BaseModel):
 
     stage: OpportunityStage | None = None
 
+    priority: OpportunityPriority | None = None
+
+    probability: int | None = Field(
+        default=None,
+        ge=0,
+        le=100,
+    )
+
+    expected_close_date: date | None = None
+
+    notes: str | None = Field(
+        default=None,
+        max_length=5000,
+    )
+
+    assigned_user_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
     customer_id: int | None = Field(
         default=None,
         gt=0,
     )
 
 
-class OpportunityResponse(OpportunityBase):
+class OpportunityResponse(
+    OpportunityBase,
+):
     id: int
     created_at: datetime
 

@@ -1,6 +1,9 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+)
 
 
 class ActivityBase(BaseModel):
@@ -10,6 +13,7 @@ class ActivityBase(BaseModel):
     scheduled_at: datetime
     status: str = "pending"
     customer_id: int
+    opportunity_id: int | None = None
 
 
 class ActivityCreate(ActivityBase):
@@ -23,17 +27,21 @@ class ActivityUpdate(BaseModel):
     scheduled_at: datetime | None = None
     status: str | None = None
     customer_id: int | None = None
+    opportunity_id: int | None = None
 
 
 class ActivityResponse(ActivityBase):
     id: int
     created_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+
 
 class ActivitySummaryResponse(BaseModel):
     total: int
     pending: int
     completed: int
     overdue: int
-    upcoming: int    
+    upcoming: int

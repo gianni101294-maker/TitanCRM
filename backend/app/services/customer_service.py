@@ -1,78 +1,141 @@
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.app.models.customer import Customer
-from backend.app.repositories.customer_repository import (
-    create_customer,
-    delete_customer,
-    get_all_customers,
-    get_customer_by_email,
-    get_customer_by_id,
-    update_customer,
-)
-from backend.app.schemas.customer import CustomerCreate, CustomerUpdate
+from app.models.customer import Customer
+from app.schemas.customer import CustomerCreate
+from app.schemas.customer import CustomerUpdate
 
 
-def list_customers(db: Session) -> list[Customer]:
-    return get_all_customers(db)
+def normalize_email(email: str) -> str:
+    return email.strip().lower()
 
 
-def get_customer(db: Session, customer_id: int) -> Customer:
-    customer = get_customer_by_id(db, customer_id)
+def get_customer_by_id(
+    db: Session,
+    customer_id: int,
+) -> Customer | None:
+    statement = select(Customer).where(
+        Customer.id == customer_id,
+    )
 
-    if customer is None:
-        raise ValueError("Cliente no encontrado.")
+    return db.scalar(statement)
+
+
+def get_customer_by_email(
+    db: Session,
+    email: str,
+) -> Customer | None:
+    normalized_email = normalize_email(email)
+
+    statement = select(Customer).where(
+        Customer.email == normalized_email,
+    )
+
+    return db.scalar(statement)
+
+
+def get_customers(
+    db: Session,
+) -> list[Customer]:
+    statement = select(Customer).order_by(
+        Customer.id.desc(),
+    )
+
+    return list(
+        db.scalars(statement).all(),
+    )
+
+
+def create_customer(
+    db: Session,
+    payload: CustomerCreate,
+) -> Customer:
+    existing_customer = get_customer_by_email(
+        db,
+        payload.email,
+    )
+
+    if existing_customer:
+        raise ValueError(
+            "Ya existe un cliente con ese correo.",
+        )
+
+    customer = Customer(
+        company_name=payload.company_name.strip(),
+        contact_name=payload.contact_name.strip(),
+        email=normalize_email(payload.email),
+        phone=payload.phone.strip(),
+        is_active=payload.is_active,
+    )
+
+    db.add(customer)
+    db.commit()
+    db.refresh(customer)
 
     return customer
 
 
-def register_customer(
+def update_customer(
     db: Session,
-    customer_data: CustomerCreate,
+    customer: Customer,
+    payload: CustomerUpdate,
 ) -> Customer:
-    existing_customer = get_customer_by_email(
-        db,
-        customer_data.email,
+    update_data = payload.model_dump(
+        exclude_unset=True,
     )
 
-    if existing_customer is not None:
-        raise ValueError(
-            "Ya existe un cliente con ese correo electrónico."
+    if "email" in update_data:
+        email = normalize_email(
+            update_data["email"],
         )
 
-    return create_customer(db, customer_data)
-
-
-def edit_customer(
-    db: Session,
-    customer_id: int,
-    customer_data: CustomerUpdate,
-) -> Customer:
-    customer = get_customer(db, customer_id)
-
-    if customer_data.email is not None:
         existing_customer = get_customer_by_email(
             db,
-            customer_data.email,
+            email,
         )
 
         if (
-            existing_customer is not None
-            and existing_customer.id != customer_id
+            existing_customer
+            and existing_customer.id
+            != customer.id
         ):
             raise ValueError(
-                "Ya existe otro cliente con ese correo electrónico."
+                "Ya existe un cliente con ese correo.",
             )
 
-    return update_customer(
-        db,
-        customer,
-        customer_data,
-    )
+        update_data["email"] = email
+
+    if "company_name" in update_data:
+        update_data["company_name"] = (
+            update_data["company_name"].strip()
+        )
+
+    if "contact_name" in update_data:
+        update_data["contact_name"] = (
+            update_data["contact_name"].strip()
+        )
+
+    if "phone" in update_data:
+        update_data["phone"] = (
+            update_data["phone"].strip()
+        )
+
+    for field, value in update_data.items():
+        setattr(
+            customer,
+            field,
+            value,
+        )
+
+    db.commit()
+    db.refresh(customer)
+
+    return customer
 
 
-def remove_customer(
+def delete_customer(
     db: Session,
-    customer_id: int,
+    customer: Customer,
 ) -> None:
-    customer = get_customer(db, customer_id)
-    delete_customer(db, customer)
+    db.delete(customer)
+    db.commit()

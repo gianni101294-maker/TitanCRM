@@ -1,9 +1,19 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import (
+    DateTime,
+    ForeignKey,
+    String,
+    Text,
+    func,
+)
+from sqlalchemy.orm import (
+    Mapped,
+    mapped_column,
+    relationship,
+)
 
-from backend.app.database.base import Base
+from app.database.base import Base
 
 
 class Activity(Base):
@@ -49,6 +59,15 @@ class Activity(Base):
         index=True,
     )
 
+    opportunity_id: Mapped[int | None] = mapped_column(
+        ForeignKey(
+            "opportunities.id",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+        index=True,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -57,5 +76,10 @@ class Activity(Base):
 
     customer = relationship(
         "Customer",
+        back_populates="activities",
+    )
+
+    opportunity = relationship(
+        "Opportunity",
         back_populates="activities",
     )
