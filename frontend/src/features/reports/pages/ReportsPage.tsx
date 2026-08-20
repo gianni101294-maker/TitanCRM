@@ -181,59 +181,11 @@ export function ReportsPage() {
 
   const monthlySales =
     useMemo(
-      () => [
-        {
-          month: "Ene",
-          value: 12000,
-        },
-        {
-          month: "Feb",
-          value: 18000,
-        },
-        {
-          month: "Mar",
-          value: 15000,
-        },
-        {
-          month: "Abr",
-          value: 23000,
-        },
-        {
-          month: "May",
-          value: 26000,
-        },
-        {
-          month: "Jun",
-          value: 32000,
-        },
-        {
-          month: "Jul",
-          value: 29000,
-        },
-        {
-          month: "Ago",
-          value: 36000,
-        },
-        {
-          month: "Sep",
-          value: 42000,
-        },
-        {
-          month: "Oct",
-          value: 39000,
-        },
-        {
-          month: "Nov",
-          value: 47000,
-        },
-        {
-          month: "Dic",
-          value: 52000,
-        },
-      ],
-      [],
+      () =>
+        data?.monthlySales.months ??
+        [],
+      [data],
     );
-
 
   const pipelineValues =
     useMemo(

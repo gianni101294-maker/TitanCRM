@@ -16,6 +16,9 @@ from app.api.routes.pipeline import (
 from app.api.routes.dashboard import (
     router as dashboard_router,
 )
+from app.api.routes.reports import (
+    router as reports_router,
+)
 
 app = FastAPI(
     title="TitanCRM API",
@@ -40,6 +43,7 @@ app.include_router(opportunities_router)
 app.include_router(activities_router)
 app.include_router(pipeline_router)
 app.include_router(dashboard_router)
+app.include_router(reports_router)
 
 
 @app.get("/")
