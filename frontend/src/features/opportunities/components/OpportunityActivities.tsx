@@ -3,6 +3,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type FormEvent,
 } from "react";
 
 import {
@@ -24,15 +25,14 @@ import {
 } from "@mui/material";
 
 import {
-  useNavigate,
-} from "react-router-dom";
-
-import {
+  ActivityFormDialog,
   ActivityStatusChip,
   ActivityTypeChip,
+  createActivity,
   getActivitiesByOpportunity,
   updateActivity,
   type Activity,
+  type ActivityCreate,
 } from "@/features/activities";
 
 import {
@@ -46,6 +46,16 @@ import {
 import type {
   ActivityStatus,
 } from "@/features/activities/components/ActivityStatusChip";
+
+import {
+  getCustomers,
+  type Customer,
+} from "@/features/customers";
+
+import {
+  getOpportunities,
+  type Opportunity,
+} from "@/features/opportunities";
 
 interface OpportunityActivitiesProps {
   opportunityId: number;
@@ -89,8 +99,6 @@ function isActivityStatus(
 export function OpportunityActivities({
   opportunityId,
 }: OpportunityActivitiesProps) {
-  const navigate = useNavigate();
-
   const {
     can,
   } = usePermissions();
@@ -98,6 +106,11 @@ export function OpportunityActivities({
   const canEditActivities =
     can(
       PERMISSIONS.ACTIVITIES_EDIT,
+    );
+
+  const canCreateActivities =
+    can(
+      PERMISSIONS.ACTIVITIES_CREATE,
     );
 
   const [
@@ -121,6 +134,51 @@ export function OpportunityActivities({
   ] = useState<number | null>(
     null,
   );
+
+  const [
+    isCreateDialogOpen,
+    setIsCreateDialogOpen,
+  ] = useState(false);
+
+  const [
+    editingActivity,
+    setEditingActivity,
+  ] = useState<Activity | null>(
+    null,
+  );
+
+  const [
+    isSavingActivity,
+    setIsSavingActivity,
+  ] = useState(false);
+
+  const [
+    formError,
+    setFormError,
+  ] = useState("");
+
+  const [
+    customers,
+    setCustomers,
+  ] = useState<Customer[]>([]);
+
+  const [
+    opportunities,
+    setOpportunities,
+  ] = useState<Opportunity[]>([]);
+
+  const [
+    formData,
+    setFormData,
+  ] = useState<ActivityCreate>({
+    title: "",
+    activity_type: "task",
+    description: "",
+    scheduled_at: "",
+    status: "pending",
+    customer_id: 0,
+    opportunity_id: opportunityId,
+  });
 
   const loadActivities =
     useCallback(
@@ -207,18 +265,262 @@ export function OpportunityActivities({
       [activities],
     );
 
-  function handleOpenActivity(
-    activityId: number,
+  async function handleOpenActivity(
+    activity: Activity,
   ) {
-    navigate(
-      `/activities?selected=${activityId}`,
-    );
+    if (!canEditActivities) {
+      return;
+    }
+
+    setFormError("");
+    setErrorMessage("");
+
+    try {
+      const [
+        customerData,
+        opportunityData,
+      ] = await Promise.all([
+        getCustomers(),
+        getOpportunities(),
+      ]);
+
+      const activityCustomerId =
+        activity.customer_id;
+
+      setCustomers(customerData);
+
+      setOpportunities(
+        opportunityData.filter(
+          (item) =>
+            item.customer_id ===
+            activityCustomerId,
+        ),
+      );
+
+      const scheduledDate =
+        new Date(
+          activity.scheduled_at,
+        );
+
+      const scheduledAt =
+        Number.isNaN(
+          scheduledDate.getTime(),
+        )
+          ? activity.scheduled_at.slice(
+              0,
+              16,
+            )
+          : new Date(
+              scheduledDate.getTime() -
+                scheduledDate.getTimezoneOffset() *
+                  60000,
+            )
+              .toISOString()
+              .slice(0, 16);
+
+      setFormData({
+        title: activity.title,
+        activity_type:
+          activity.activity_type,
+        description:
+          activity.description ?? "",
+        scheduled_at: scheduledAt,
+        status: activity.status,
+        customer_id:
+          activity.customer_id,
+        opportunity_id:
+          activity.opportunity_id,
+      });
+
+      setEditingActivity(activity);
+      setIsCreateDialogOpen(true);
+    } catch {
+      setErrorMessage(
+        "No se pudo preparar la edición de la actividad.",
+      );
+    }
   }
 
-  function handleCreateActivity() {
-    navigate(
-      `/activities?opportunity=${opportunityId}`,
+  async function handleCreateActivity() {
+    setEditingActivity(null);
+    setFormError("");
+
+    try {
+      const [
+        customerData,
+        opportunityData,
+      ] = await Promise.all([
+        getCustomers(),
+        getOpportunities(),
+      ]);
+
+      const currentOpportunity =
+        opportunityData.find(
+          (item) =>
+            item.id === opportunityId,
+        );
+
+      if (!currentOpportunity) {
+        setErrorMessage(
+          "No se encontró la oportunidad seleccionada.",
+        );
+        return;
+      }
+
+      setCustomers(customerData);
+      setOpportunities(
+        opportunityData.filter(
+          (item) =>
+            item.customer_id ===
+            currentOpportunity.customer_id,
+        ),
+      );
+
+      const now = new Date();
+      const localDate = new Date(
+        now.getTime() -
+          now.getTimezoneOffset() *
+            60000,
+      )
+        .toISOString()
+        .slice(0, 16);
+
+      setFormData({
+        title: "",
+        activity_type: "task",
+        description: "",
+        scheduled_at: localDate,
+        status: "pending",
+        customer_id:
+          currentOpportunity.customer_id,
+        opportunity_id:
+          currentOpportunity.id,
+      });
+
+      setIsCreateDialogOpen(true);
+    } catch {
+      setErrorMessage(
+        "No se pudo preparar el formulario de actividad.",
+      );
+    }
+  }
+
+  function handleActivityFieldChange<
+    K extends keyof ActivityCreate,
+  >(
+    field: K,
+    value: ActivityCreate[K],
+  ) {
+    setFormData(
+      (current) => ({
+        ...current,
+        [field]: value,
+      }),
     );
+
+    if (
+      field === "customer_id"
+    ) {
+      setFormData(
+        (current) => ({
+          ...current,
+          customer_id:
+            value as number,
+          opportunity_id:
+            value ===
+            current.customer_id
+              ? current.opportunity_id
+              : null,
+        }),
+      );
+    }
+  }
+
+  function handleCloseCreateDialog() {
+    if (isSavingActivity) {
+      return;
+    }
+
+    setIsCreateDialogOpen(false);
+    setEditingActivity(null);
+    setFormError("");
+  }
+
+  async function handleSaveActivity(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (!formData.title.trim()) {
+      setFormError(
+        "Ingresa el título de la actividad.",
+      );
+      return;
+    }
+
+    if (!formData.customer_id) {
+      setFormError(
+        "Selecciona un cliente.",
+      );
+      return;
+    }
+
+    setIsSavingActivity(true);
+    setFormError("");
+
+    try {
+      if (editingActivity) {
+        const updatedActivity =
+          await updateActivity(
+            editingActivity.id,
+            {
+              ...formData,
+              title:
+                formData.title.trim(),
+              opportunity_id:
+                opportunityId,
+            },
+          );
+
+        setActivities(
+          (currentActivities) =>
+            currentActivities.map(
+              (currentActivity) =>
+                currentActivity.id ===
+                updatedActivity.id
+                  ? updatedActivity
+                  : currentActivity,
+            ),
+        );
+      } else {
+        const createdActivity =
+          await createActivity({
+            ...formData,
+            title:
+              formData.title.trim(),
+            opportunity_id:
+              opportunityId,
+          });
+
+        setActivities(
+          (currentActivities) => [
+            createdActivity,
+            ...currentActivities,
+          ],
+        );
+      }
+
+      setIsCreateDialogOpen(false);
+      setEditingActivity(null);
+    } catch {
+      setFormError(
+        editingActivity
+          ? "No se pudo actualizar la actividad."
+          : "No se pudo crear la actividad.",
+      );
+    } finally {
+      setIsSavingActivity(false);
+    }
   }
 
   async function handleCompleteActivity(
@@ -327,16 +629,18 @@ export function OpportunityActivities({
             </Typography>
           </Box>
 
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<Add />}
-            onClick={
-              handleCreateActivity
-            }
-          >
-            Nueva actividad
-          </Button>
+          {canCreateActivities && (
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<Add />}
+              onClick={() => {
+                void handleCreateActivity();
+              }}
+            >
+              Nueva actividad
+            </Button>
+          )}
         </Box>
 
         <Divider />
@@ -577,7 +881,7 @@ export function OpportunityActivities({
                               }
                               onClick={() =>
                                 handleOpenActivity(
-                                  activity.id,
+                                  activity,
                                 )
                               }
                             >
@@ -666,6 +970,21 @@ export function OpportunityActivities({
             </Stack>
           )}
       </Stack>
+    <ActivityFormDialog
+      open={isCreateDialogOpen}
+      activity={editingActivity}
+      customers={customers}
+      opportunities={opportunities}
+      formData={formData}
+      formError={formError}
+      isSaving={isSavingActivity}
+      onClose={handleCloseCreateDialog}
+      onSubmit={handleSaveActivity}
+      onFieldChange={
+        handleActivityFieldChange
+      }
+    />
+
     </Paper>
   );
 }
