@@ -25,6 +25,11 @@ import {
   type OpportunityEvent,
 } from "../api/opportunities";
 
+import {
+  getUsers,
+  type User,
+} from "@/features/users";
+
 interface OpportunityHistoryProps {
   opportunityId: number;
 }
@@ -81,6 +86,11 @@ export function OpportunityHistory({
   ] = useState<OpportunityEvent[]>([]);
 
   const [
+    users,
+    setUsers,
+  ] = useState<User[]>([]);
+
+  const [
     loading,
     setLoading,
   ] = useState(true);
@@ -98,16 +108,22 @@ export function OpportunityHistory({
       setError("");
 
       try {
-        const data =
-          await getOpportunityEvents(
+        const [
+          eventData,
+          userData,
+        ] = await Promise.all([
+          getOpportunityEvents(
             opportunityId,
-          );
+          ),
+          getUsers(),
+        ]);
 
         if (!active) {
           return;
         }
 
-        setEvents(data);
+        setEvents(eventData);
+        setUsers(userData);
       } catch (loadError) {
         if (!active) {
           return;
@@ -134,6 +150,23 @@ export function OpportunityHistory({
       active = false;
     };
   }, [opportunityId]);
+
+  function getUserName(
+    userId: number | null,
+  ) {
+    if (userId === null) {
+      return null;
+    }
+
+    const user = users.find(
+      (item) => item.id === userId,
+    );
+
+    return (
+      user?.full_name ??
+      `Usuario #${userId}`
+    );
+  }
 
   return (
     <Paper
@@ -348,8 +381,9 @@ export function OpportunityHistory({
                             variant="caption"
                             color="text.secondary"
                           >
-                            • Usuario #
-                            {event.user_id}
+                            • {getUserName(
+                              event.user_id,
+                            )}
                           </Typography>
                         )}
                       </Stack>
