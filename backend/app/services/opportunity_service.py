@@ -488,6 +488,18 @@ def edit_opportunity(
                 f"{new_display}"
             ),
             user_id=user_id,
+            old_stage=(
+                str(old_value)
+                if field == "stage"
+                and old_value is not None
+                else None
+            ),
+            new_stage=(
+                str(new_value)
+                if field == "stage"
+                and new_value is not None
+                else None
+            ),
             commit=False,
         )
 

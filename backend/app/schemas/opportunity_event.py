@@ -11,6 +11,8 @@ class OpportunityEventResponse(BaseModel):
     title: str
     description: str | None
     user_id: int | None
+    old_stage: str | None
+    new_stage: str | None
     created_at: datetime
 
     model_config = ConfigDict(

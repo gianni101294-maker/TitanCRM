@@ -50,6 +50,17 @@ class OpportunityEvent(Base):
         nullable=True,
     )
 
+    old_stage: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+
+    new_stage: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        index=True,
+    )
+
     user_id: Mapped[int | None] = mapped_column(
         ForeignKey(
             "users.id",

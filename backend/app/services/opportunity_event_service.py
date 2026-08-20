@@ -11,6 +11,8 @@ def create_opportunity_event(
     title: str,
     description: str | None = None,
     user_id: int | None = None,
+    old_stage: str | None = None,
+    new_stage: str | None = None,
     *,
     commit: bool = True,
 ) -> OpportunityEvent:
@@ -20,6 +22,8 @@ def create_opportunity_event(
         title=title,
         description=description,
         user_id=user_id,
+        old_stage=old_stage,
+        new_stage=new_stage,
     )
 
     db.add(event)
