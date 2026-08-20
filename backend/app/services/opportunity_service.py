@@ -261,17 +261,72 @@ def edit_opportunity(
                 if new_value is not None
                 else "Sin definir"
             )
+
         elif field == "value":
             old_display = (
-                f"S/ {old_value}"
+                f"S/ {old_value:,.2f}"
                 if old_value is not None
                 else "Sin definir"
             )
             new_display = (
-                f"S/ {new_value}"
+                f"S/ {new_value:,.2f}"
                 if new_value is not None
                 else "Sin definir"
             )
+
+        elif field == "stage":
+            stage_labels = {
+                "prospect": "Prospecto",
+                "contacted": "Contactado",
+                "proposal": "Propuesta",
+                "negotiation": "Negociación",
+                "won": "Ganada",
+                "lost": "Perdida",
+            }
+
+            old_display = (
+                stage_labels.get(
+                    str(old_value),
+                    str(old_value),
+                )
+                if old_value is not None
+                else "Sin definir"
+            )
+
+            new_display = (
+                stage_labels.get(
+                    str(new_value),
+                    str(new_value),
+                )
+                if new_value is not None
+                else "Sin definir"
+            )
+
+        elif field == "priority":
+            priority_labels = {
+                "low": "Baja",
+                "medium": "Media",
+                "high": "Alta",
+            }
+
+            old_display = (
+                priority_labels.get(
+                    str(old_value),
+                    str(old_value),
+                )
+                if old_value is not None
+                else "Sin definir"
+            )
+
+            new_display = (
+                priority_labels.get(
+                    str(new_value),
+                    str(new_value),
+                )
+                if new_value is not None
+                else "Sin definir"
+            )
+
         else:
             old_display = (
                 str(old_value)
