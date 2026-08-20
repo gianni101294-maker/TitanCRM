@@ -76,8 +76,6 @@ const supervisorPermissions: Permission[] = [
 ];
 
 const salesPermissions: Permission[] = [
-  PERMISSIONS.DASHBOARD_VIEW,
-
   PERMISSIONS.CUSTOMERS_VIEW,
   PERMISSIONS.CUSTOMERS_CREATE,
   PERMISSIONS.CUSTOMERS_EDIT,
