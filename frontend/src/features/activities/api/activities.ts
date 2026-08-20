@@ -96,7 +96,7 @@ export async function updateActivity(
   activityId: number,
   activity: ActivityUpdate,
 ): Promise<Activity> {
-  const response = await client.patch<Activity>(
+  const response = await client.put<Activity>(
     `/activities/${activityId}`,
     activity,
     {

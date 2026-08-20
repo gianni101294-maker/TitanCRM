@@ -1,12 +1,14 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
 import {
   Add,
   CalendarMonth,
+  CheckCircle,
   OpenInNew,
 } from "@mui/icons-material";
 
@@ -29,8 +31,17 @@ import {
   ActivityStatusChip,
   ActivityTypeChip,
   getActivitiesByOpportunity,
+  updateActivity,
   type Activity,
 } from "@/features/activities";
+
+import {
+  PERMISSIONS,
+} from "@/features/auth/permissions";
+
+import {
+  usePermissions,
+} from "@/features/auth/hooks/usePermissions";
 
 import type {
   ActivityStatus,
@@ -80,6 +91,15 @@ export function OpportunityActivities({
 }: OpportunityActivitiesProps) {
   const navigate = useNavigate();
 
+  const {
+    can,
+  } = usePermissions();
+
+  const canEditActivities =
+    can(
+      PERMISSIONS.ACTIVITIES_EDIT,
+    );
+
   const [
     activities,
     setActivities,
@@ -94,6 +114,13 @@ export function OpportunityActivities({
     errorMessage,
     setErrorMessage,
   ] = useState("");
+
+  const [
+    updatingActivityId,
+    setUpdatingActivityId,
+  ] = useState<number | null>(
+    null,
+  );
 
   const loadActivities =
     useCallback(
@@ -162,6 +189,24 @@ export function OpportunityActivities({
     };
   }, [opportunityId]);
 
+  const sortedActivities =
+    useMemo(
+      () =>
+        [...activities].sort(
+          (
+            first,
+            second,
+          ) =>
+            new Date(
+              second.scheduled_at,
+            ).getTime() -
+            new Date(
+              first.scheduled_at,
+            ).getTime(),
+        ),
+      [activities],
+    );
+
   function handleOpenActivity(
     activityId: number,
   ) {
@@ -174,6 +219,69 @@ export function OpportunityActivities({
     navigate(
       `/activities?opportunity=${opportunityId}`,
     );
+  }
+
+  async function handleCompleteActivity(
+    activity: Activity,
+  ) {
+    if (
+      activity.status ===
+      "completed"
+    ) {
+      return;
+    }
+
+    setUpdatingActivityId(
+      activity.id,
+    );
+
+    setErrorMessage("");
+
+    try {
+      const updatedActivity =
+        await updateActivity(
+          activity.id,
+          {
+            title:
+              activity.title,
+            activity_type:
+              activity.activity_type,
+            description:
+              activity.description,
+            scheduled_at:
+              activity.scheduled_at,
+            status:
+              "completed",
+            customer_id:
+              activity.customer_id,
+            opportunity_id:
+              activity.opportunity_id,
+          },
+        );
+
+      setActivities(
+        (
+          currentActivities,
+        ) =>
+          currentActivities.map(
+            (
+              currentActivity,
+            ) =>
+              currentActivity.id ===
+              updatedActivity.id
+                ? updatedActivity
+                : currentActivity,
+          ),
+      );
+    } catch {
+      setErrorMessage(
+        "No se pudo completar la actividad.",
+      );
+    } finally {
+      setUpdatingActivityId(
+        null,
+      );
+    }
   }
 
   return (
@@ -215,8 +323,7 @@ export function OpportunityActivities({
               variant="body2"
               color="text.secondary"
             >
-              Seguimiento comercial de esta
-              oportunidad.
+              Línea de tiempo comercial de esta oportunidad.
             </Typography>
           </Box>
 
@@ -238,7 +345,8 @@ export function OpportunityActivities({
           <Box
             sx={{
               display: "flex",
-              justifyContent: "center",
+              justifyContent:
+                "center",
               py: 4,
             }}
           >
@@ -270,10 +378,12 @@ export function OpportunityActivities({
 
         {!isLoading &&
           !errorMessage &&
-          activities.length === 0 && (
+          activities.length ===
+            0 && (
             <Box
               sx={{
-                textAlign: "center",
+                textAlign:
+                  "center",
                 py: 4,
               }}
             >
@@ -302,9 +412,7 @@ export function OpportunityActivities({
                   mb: 2,
                 }}
               >
-                Todavía no hay actividades
-                relacionadas con esta
-                oportunidad.
+                Todavía no hay actividades relacionadas con esta oportunidad.
               </Typography>
 
               <Button
@@ -321,12 +429,16 @@ export function OpportunityActivities({
 
         {!isLoading &&
           !errorMessage &&
-          activities.length > 0 && (
+          sortedActivities.length >
+            0 && (
             <Stack
-              spacing={1.5}
+              spacing={0}
             >
-              {activities.map(
-                (activity) => {
+              {sortedActivities.map(
+                (
+                  activity,
+                  index,
+                ) => {
                   const status =
                     isActivityStatus(
                       activity.status,
@@ -334,118 +446,220 @@ export function OpportunityActivities({
                       ? activity.status
                       : "pending";
 
+                  const isUpdating =
+                    updatingActivityId ===
+                    activity.id;
+
+                  const isCompleted =
+                    status ===
+                    "completed";
+
+                  const isLast =
+                    index ===
+                    sortedActivities.length -
+                      1;
+
                   return (
-                    <Paper
-                      key={activity.id}
-                      variant="outlined"
+                    <Box
+                      key={
+                        activity.id
+                      }
                       sx={{
-                        p: 2,
-                        borderRadius: 2,
+                        display:
+                          "grid",
+                        gridTemplateColumns:
+                          "30px 1fr",
+                        columnGap: 1.5,
                       }}
                     >
-                      <Stack
-                        spacing={1.5}
+                      <Box
+                        sx={{
+                          position:
+                            "relative",
+                          display:
+                            "flex",
+                          justifyContent:
+                            "center",
+                        }}
                       >
+                        {!isLast && (
+                          <Box
+                            sx={{
+                              position:
+                                "absolute",
+                              top: 18,
+                              bottom: -18,
+                              width: 2,
+                              bgcolor:
+                                "divider",
+                            }}
+                          />
+                        )}
+
                         <Box
                           sx={{
-                            display:
-                              "flex",
-                            justifyContent:
-                              "space-between",
-                            alignItems:
-                              "flex-start",
-                            gap: 2,
+                            mt: 1,
+                            width: 12,
+                            height: 12,
+                            borderRadius:
+                              "50%",
+                            bgcolor:
+                              isCompleted
+                                ? "success.main"
+                                : "primary.main",
+                            zIndex: 1,
                           }}
+                        />
+                      </Box>
+
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          mb: isLast
+                            ? 0
+                            : 2,
+                          borderRadius:
+                            2,
+                        }}
+                      >
+                        <Stack
+                          spacing={1.5}
                         >
                           <Box
                             sx={{
-                              minWidth: 0,
-                              flex: 1,
+                              display:
+                                "flex",
+                              justifyContent:
+                                "space-between",
+                              alignItems:
+                                "flex-start",
+                              gap: 2,
                             }}
                           >
-                            <Typography
+                            <Box
                               sx={{
-                                fontWeight:
-                                  700,
+                                minWidth:
+                                  0,
+                                flex: 1,
+                              }}
+                            >
+                              <Typography
+                                sx={{
+                                  fontWeight:
+                                    700,
+                                  overflowWrap:
+                                    "anywhere",
+                                }}
+                              >
+                                {
+                                  activity.title
+                                }
+                              </Typography>
+
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{
+                                  mt: 0.5,
+                                }}
+                              >
+                                {formatActivityDate(
+                                  activity.scheduled_at,
+                                )}
+                              </Typography>
+                            </Box>
+
+                            <Button
+                              size="small"
+                              endIcon={
+                                <OpenInNew />
+                              }
+                              onClick={() =>
+                                handleOpenActivity(
+                                  activity.id,
+                                )
+                              }
+                            >
+                              Abrir
+                            </Button>
+                          </Box>
+
+                          <Box
+                            sx={{
+                              display:
+                                "flex",
+                              flexWrap:
+                                "wrap",
+                              alignItems:
+                                "center",
+                              gap: 1,
+                            }}
+                          >
+                            <ActivityTypeChip
+                              activityType={
+                                activity.activity_type
+                              }
+                            />
+
+                            <ActivityStatusChip
+                              status={
+                                status
+                              }
+                            />
+                          </Box>
+
+                          {activity.description
+                            ?.trim() && (
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                whiteSpace:
+                                  "pre-wrap",
                                 overflowWrap:
                                   "anywhere",
                               }}
                             >
                               {
-                                activity.title
+                                activity.description
                               }
                             </Typography>
+                          )}
 
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
-                              sx={{
-                                mt: 0.5,
-                              }}
-                            >
-                              {formatActivityDate(
-                                activity.scheduled_at,
-                              )}
-                            </Typography>
-                          </Box>
-
-                          <Button
-                            size="small"
-                            endIcon={
-                              <OpenInNew />
-                            }
-                            onClick={() =>
-                              handleOpenActivity(
-                                activity.id,
-                              )
-                            }
-                          >
-                            Abrir
-                          </Button>
-                        </Box>
-
-                        <Box
-                          sx={{
-                            display:
-                              "flex",
-                            flexWrap:
-                              "wrap",
-                            alignItems:
-                              "center",
-                            gap: 1,
-                          }}
-                        >
-                          <ActivityTypeChip
-                            activityType={
-                              activity.activity_type
-                            }
-                          />
-
-                          <ActivityStatusChip
-                            status={
-                              status
-                            }
-                          />
-                        </Box>
-
-                        {activity.description
-                          ?.trim() && (
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              whiteSpace:
-                                "pre-wrap",
-                              overflowWrap:
-                                "anywhere",
-                            }}
-                          >
-                            {
-                              activity.description
-                            }
-                          </Typography>
-                        )}
-                      </Stack>
-                    </Paper>
+                          {canEditActivities &&
+                            !isCompleted && (
+                              <Box>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={
+                                    isUpdating ? (
+                                      <CircularProgress
+                                        size={16}
+                                        color="inherit"
+                                      />
+                                    ) : (
+                                      <CheckCircle />
+                                    )
+                                  }
+                                  disabled={
+                                    isUpdating
+                                  }
+                                  onClick={() => {
+                                    void handleCompleteActivity(
+                                      activity,
+                                    );
+                                  }}
+                                >
+                                  {isUpdating
+                                    ? "Completando..."
+                                    : "Marcar como completada"}
+                                </Button>
+                              </Box>
+                            )}
+                        </Stack>
+                      </Paper>
+                    </Box>
                   );
                 },
               )}
