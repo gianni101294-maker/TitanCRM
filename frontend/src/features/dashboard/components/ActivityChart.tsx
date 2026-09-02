@@ -18,8 +18,8 @@ interface ActivityChartProps {
 }
 
 const COLORS = [
-  "#F59E0B",
   "#EF4444",
+  "#F59E0B",
   "#3B82F6",
 ];
 
@@ -28,14 +28,20 @@ export function ActivityChart({
   overdue,
   upcoming,
 }: ActivityChartProps) {
+  const today =
+    Math.max(
+      pending - overdue - upcoming,
+      0,
+    );
+
   const data = [
-    {
-      name: "Pendientes",
-      value: pending,
-    },
     {
       name: "Vencidas",
       value: overdue,
+    },
+    {
+      name: "Hoy",
+      value: today,
     },
     {
       name: "Próximas",

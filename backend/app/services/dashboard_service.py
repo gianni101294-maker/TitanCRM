@@ -273,20 +273,22 @@ def get_dashboard(
         ):
             continue
 
-        if scheduled_at > now:
+        if activity.status != "pending":
+            continue
+
+        dashboard[
+            "pending_activities"
+        ] += 1
+
+        if scheduled_at.date() < now.date():
+            dashboard[
+                "overdue_activities"
+            ] += 1
+
+        elif scheduled_at.date() > now.date():
             dashboard[
                 "upcoming_activities"
             ] += 1
-
-        if activity.status == "pending":
-            dashboard[
-                "pending_activities"
-            ] += 1
-
-            if scheduled_at < now:
-                dashboard[
-                    "overdue_activities"
-                ] += 1
 
     current_metrics = (
         _calculate_comparison_metrics(

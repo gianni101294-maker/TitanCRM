@@ -152,7 +152,7 @@ export function Dashboard() {
     {
       title: "Clientes",
       value: data?.total_customers ?? 0,
-      description: "Clientes registrados",
+      description: "Clientes del período",
       icon: <Groups />,
       color: "primary.main",
       comparison: data
@@ -167,7 +167,7 @@ export function Dashboard() {
     {
       title: "Oportunidades",
       value: data?.total_opportunities ?? 0,
-      description: "Negocios activos",
+      description: "Oportunidades del período",
       icon: <Work />,
       color: "secondary.main",
       comparison: data
@@ -184,16 +184,16 @@ export function Dashboard() {
       value: formatCurrency(
         data?.total_pipeline_value ?? 0,
       ),
-      description: "Valor comercial",
+      description: "Pipeline abierto del período",
       icon: <MonetizationOn />,
       color: "success.main",
     },
     {
-      title: "Pendientes",
+      title: "Por atender",
       value:
         data?.pending_activities ??
         pendingActivities,
-      description: "Actividades abiertas",
+      description: "Actividades abiertas del período",
       icon: <CalendarMonth />,
       color: "warning.main",
       comparison: data
@@ -208,7 +208,7 @@ export function Dashboard() {
     {
       title: "Conversión",
       value: `${conversion.toFixed(1)}%`,
-      description: "Oportunidades ganadas",
+      description: "Conversión de cierres del período",
       icon: <Percent />,
       color: "info.main",
       comparison: data
