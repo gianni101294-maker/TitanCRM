@@ -5,56 +5,48 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-
 import { Typography } from "@mui/material";
 
-import type { Activity } from "@/features/activities";
-import { DashboardChartCard } from "./DashboardChartCard";
+import {
+  DashboardChartCard,
+} from "./DashboardChartCard";
 
 interface ActivityChartProps {
-  activities: Activity[];
+  pending: number;
+  overdue: number;
+  upcoming: number;
 }
 
 const COLORS = [
   "#F59E0B",
-  "#22C55E",
+  "#EF4444",
   "#3B82F6",
 ];
 
 export function ActivityChart({
-  activities,
+  pending,
+  overdue,
+  upcoming,
 }: ActivityChartProps) {
-  const pending = activities.filter(
-    (activity) => activity.status === "pending",
-  ).length;
-
-  const completed = activities.filter(
-    (activity) => activity.status === "completed",
-  ).length;
-
-  const cancelled = activities.filter(
-    (activity) => activity.status === "cancelled",
-  ).length;
-
   const data = [
     {
       name: "Pendientes",
       value: pending,
     },
     {
-      name: "Completadas",
-      value: completed,
+      name: "Vencidas",
+      value: overdue,
     },
     {
-      name: "Canceladas",
-      value: cancelled,
+      name: "Próximas",
+      value: upcoming,
     },
   ];
 
   return (
     <DashboardChartCard
       title="Estado de actividades"
-      description="Distribución de actividades registradas."
+      description="Actividades del período seleccionado."
     >
       <ResponsiveContainer
         width="100%"
@@ -92,7 +84,7 @@ export function ActivityChart({
           align="center"
           color="text.secondary"
         >
-          No hay actividades registradas.
+          No hay actividades en este período.
         </Typography>
       )}
     </DashboardChartCard>

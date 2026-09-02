@@ -3,6 +3,7 @@ export {
 } from "./api/dashboard";
 
 export type {
+  DashboardPeriod,
   DashboardResponse,
   OpportunitiesByStage,
 } from "./api/dashboard";

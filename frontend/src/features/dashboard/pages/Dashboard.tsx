@@ -1,4 +1,7 @@
 import {
+  useState,
+} from "react";
+import {
   CalendarMonth,
   Groups,
   MonetizationOn,
@@ -18,6 +21,12 @@ import { DashboardStatsCard } from "../components/DashboardStatsCard";
 import { PipelineChart } from "../components/PipelineChart";
 import { RecentActivity } from "../components/RecentActivity";
 import { useDashboard } from "../hooks/useDashboard";
+import type {
+  DashboardPeriod,
+} from "../api/dashboard";
+import {
+  ReportFilterBar,
+} from "@/features/reports/components/ReportFilterBar";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 
 function formatCurrency(value: number | string) {
@@ -30,14 +39,20 @@ function formatCurrency(value: number | string) {
 }
 
 export function Dashboard() {
+  const [
+    period,
+    setPeriod,
+  ] = useState<DashboardPeriod>(
+    "30d",
+  );
+
   const {
     data,
-    pipeline,
     activities,
     loading,
     error,
     reload,
-  } = useDashboard();
+  } = useDashboard(period);
 
   if (loading) {
     return (
@@ -50,12 +65,18 @@ export function Dashboard() {
     );
   }
 
-  const won = pipeline.won.length;
-  const lost = pipeline.lost.length;
+  const won =
+    data?.opportunities_by_stage.won ?? 0;
+
+  const lost =
+    data?.opportunities_by_stage.lost ?? 0;
+
   const closed = won + lost;
 
   const conversion =
-    closed > 0 ? (won / closed) * 100 : 0;
+    closed > 0
+      ? (won / closed) * 100
+      : 0;
 
   const pendingActivities = activities.filter(
     (activity) => activity.status === "pending",
@@ -118,6 +139,24 @@ export function Dashboard() {
         }
       />
 
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-end",
+          mb: 3,
+        }}
+      >
+        <ReportFilterBar
+          period={period}
+          onPeriodChange={
+            (newPeriod) =>
+              setPeriod(
+                newPeriod as DashboardPeriod,
+              )
+          }
+        />
+      </Box>
+
       {error && (
         <Alert
           severity="error"
@@ -162,10 +201,29 @@ export function Dashboard() {
           mb: 3,
         }}
       >
-        <PipelineChart pipeline={pipeline} />
+        <PipelineChart
+          opportunitiesByStage={
+            data?.opportunities_by_stage ?? {
+              prospect: 0,
+              contacted: 0,
+              proposal: 0,
+              negotiation: 0,
+              won: 0,
+              lost: 0,
+            }
+          }
+        />
 
         <ActivityChart
-          activities={activities}
+          pending={
+            data?.pending_activities ?? 0
+          }
+          overdue={
+            data?.overdue_activities ?? 0
+          }
+          upcoming={
+            data?.upcoming_activities ?? 0
+          }
         />
       </Box>
 

@@ -2,8 +2,12 @@ from typing import Annotated
 
 from fastapi import APIRouter
 from fastapi import Depends
+from fastapi import Query
 from sqlalchemy.orm import Session
 
+from app.auth.permissions import (
+    AdminOrSupervisorUser,
+)
 from app.database.session import get_db
 from app.schemas.dashboard import (
     DashboardResponse,
@@ -11,7 +15,7 @@ from app.schemas.dashboard import (
 from app.services.dashboard_service import (
     get_dashboard,
 )
-from app.auth.permissions import AdminOrSupervisorUser
+
 
 router = APIRouter(
     prefix="/dashboard",
@@ -29,6 +33,12 @@ def dashboard(
         Depends(get_db),
     ],
     current_user: AdminOrSupervisorUser,
+    period: str = Query(
+        default="30d",
+        pattern="^(7d|30d|90d|year)$",
+    ),
 ):
-    return get_dashboard(db)
-
+    return get_dashboard(
+        db,
+        period,
+    )

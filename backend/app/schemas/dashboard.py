@@ -13,6 +13,7 @@ class OpportunitiesByStage(BaseModel):
 
 
 class DashboardResponse(BaseModel):
+    period: str
     total_customers: int
     total_opportunities: int
     total_pipeline_value: Decimal

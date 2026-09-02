@@ -3,35 +3,21 @@ import {
   useEffect,
   useState,
 } from "react";
-
 import {
   getActivities,
   type Activity,
 } from "@/features/activities";
 import {
   getDashboard,
+  type DashboardPeriod,
   type DashboardResponse,
 } from "../api/dashboard";
-import {
-  getPipeline,
-  type PipelineResponse,
-} from "@/features/pipeline";
 
-const emptyPipeline: PipelineResponse = {
-  prospect: [],
-  contacted: [],
-  proposal: [],
-  negotiation: [],
-  won: [],
-  lost: [],
-};
-
-export function useDashboard() {
+export function useDashboard(
+  period: DashboardPeriod,
+) {
   const [data, setData] =
     useState<DashboardResponse | null>(null);
-
-  const [pipeline, setPipeline] =
-    useState<PipelineResponse>(emptyPipeline);
 
   const [activities, setActivities] = useState<
     Activity[]
@@ -40,23 +26,21 @@ export function useDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadDashboardData = useCallback(async () => {
-    const [
-      dashboardData,
-      pipelineData,
-      activityData,
-    ] = await Promise.all([
-      getDashboard(),
-      getPipeline(),
-      getActivities(),
-    ]);
+  const loadDashboardData =
+    useCallback(async () => {
+      const [
+        dashboardData,
+        activityData,
+      ] = await Promise.all([
+        getDashboard(period),
+        getActivities(),
+      ]);
 
-    return {
-      dashboardData,
-      pipelineData,
-      activityData,
-    };
-  }, []);
+      return {
+        dashboardData,
+        activityData,
+      };
+    }, [period]);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -65,12 +49,10 @@ export function useDashboard() {
     try {
       const {
         dashboardData,
-        pipelineData,
         activityData,
       } = await loadDashboardData();
 
       setData(dashboardData);
-      setPipeline(pipelineData);
       setActivities(activityData);
     } catch {
       setError(
@@ -85,16 +67,16 @@ export function useDashboard() {
     let isMounted = true;
 
     async function loadInitialDashboard() {
+      setLoading(true);
+
       try {
         const {
           dashboardData,
-          pipelineData,
           activityData,
         } = await loadDashboardData();
 
         if (isMounted) {
           setData(dashboardData);
-          setPipeline(pipelineData);
           setActivities(activityData);
           setError("");
         }
@@ -120,7 +102,6 @@ export function useDashboard() {
 
   return {
     data,
-    pipeline,
     activities,
     loading,
     error,

@@ -8,16 +8,17 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-
 import { Typography } from "@mui/material";
 
-import type { PipelineResponse } from "@/features/pipeline";
+import type {
+  OpportunitiesByStage,
+} from "../api/dashboard";
 import {
   DashboardChartCard,
 } from "./DashboardChartCard";
 
 interface PipelineChartProps {
-  pipeline: PipelineResponse;
+  opportunitiesByStage: OpportunitiesByStage;
 }
 
 const colors = [
@@ -30,39 +31,39 @@ const colors = [
 ];
 
 export function PipelineChart({
-  pipeline,
+  opportunitiesByStage,
 }: PipelineChartProps) {
   const data = [
     {
       stage: "Prospecto",
-      total: pipeline.prospect.length,
+      total: opportunitiesByStage.prospect,
     },
     {
       stage: "Contacto",
-      total: pipeline.contacted.length,
+      total: opportunitiesByStage.contacted,
     },
     {
       stage: "Propuesta",
-      total: pipeline.proposal.length,
+      total: opportunitiesByStage.proposal,
     },
     {
       stage: "Negociación",
-      total: pipeline.negotiation.length,
+      total: opportunitiesByStage.negotiation,
     },
     {
       stage: "Ganado",
-      total: pipeline.won.length,
+      total: opportunitiesByStage.won,
     },
     {
       stage: "Perdido",
-      total: pipeline.lost.length,
+      total: opportunitiesByStage.lost,
     },
   ];
 
   return (
     <DashboardChartCard
       title="Pipeline Comercial"
-      description="Cantidad de oportunidades por etapa."
+      description="Oportunidades del período por etapa."
     >
       <ResponsiveContainer
         width="100%"
@@ -111,7 +112,7 @@ export function PipelineChart({
           align="center"
           color="text.secondary"
         >
-          No hay oportunidades.
+          No hay oportunidades en este período.
         </Typography>
       )}
     </DashboardChartCard>

@@ -1,5 +1,11 @@
 import client from "@/api/client";
 
+export type DashboardPeriod =
+  | "7d"
+  | "30d"
+  | "90d"
+  | "year";
+
 export interface OpportunitiesByStage {
   prospect: number;
   contacted: number;
@@ -10,6 +16,7 @@ export interface OpportunitiesByStage {
 }
 
 export interface DashboardResponse {
+  period: DashboardPeriod;
   total_customers: number;
   total_opportunities: number;
   total_pipeline_value: string;
@@ -31,13 +38,19 @@ function getAuthHeaders() {
   };
 }
 
-export async function getDashboard(): Promise<DashboardResponse> {
-  const response = await client.get<DashboardResponse>(
-    "/dashboard",
-    {
-      headers: getAuthHeaders(),
-    },
-  );
+export async function getDashboard(
+  period: DashboardPeriod = "30d",
+): Promise<DashboardResponse> {
+  const response =
+    await client.get<DashboardResponse>(
+      "/dashboard",
+      {
+        headers: getAuthHeaders(),
+        params: {
+          period,
+        },
+      },
+    );
 
   return response.data;
 }
