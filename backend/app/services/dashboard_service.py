@@ -1,4 +1,9 @@
 from datetime import datetime
+
+from app.core.timezone import (
+    business_now,
+    to_business_timezone,
+)
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -24,10 +29,7 @@ PIPELINE_STAGES = (
 
 
 def _local_datetime(value: datetime) -> datetime:
-    if value.tzinfo is None:
-        return value.astimezone()
-
-    return value
+    return to_business_timezone(value)
 
 
 def _calculate_comparison_metrics(
@@ -126,7 +128,7 @@ def get_dashboard(
     db: Session,
     period: str = "30d",
 ) -> dict:
-    now = datetime.now().astimezone()
+    now = business_now()
 
     (
         current_start,

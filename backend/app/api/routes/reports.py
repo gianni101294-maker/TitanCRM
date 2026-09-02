@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter
@@ -7,6 +6,7 @@ from fastapi import Query
 from sqlalchemy.orm import Session
 
 from app.auth.permissions import AdminOrSupervisorUser
+from app.core.timezone import business_now
 from app.database.session import get_db
 from app.schemas.report import (
     ClosedOpportunitiesResponse,
@@ -37,7 +37,7 @@ def monthly_sales(
     ],
     current_user: AdminOrSupervisorUser,
     year: int = Query(
-        default_factory=lambda: datetime.now().year,
+        default_factory=lambda: business_now().year,
         ge=2000,
         le=2100,
     ),

@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 
 from sqlalchemy import select
+
+from app.core.timezone import business_now
 from sqlalchemy.orm import Session
 
 from app.models.opportunity import Opportunity
@@ -26,7 +28,7 @@ MONTH_LABELS = [
 def get_period_start_date(
     period: str,
 ) -> datetime:
-    now = datetime.now().astimezone()
+    now = business_now()
 
     if period == "year":
         return now.replace(
@@ -234,7 +236,7 @@ def get_period_date_ranges(
     datetime,
     datetime,
 ]:
-    now = datetime.now().astimezone()
+    now = business_now()
 
     if period == "year":
         current_start = now.replace(
