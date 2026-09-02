@@ -35,6 +35,20 @@ export interface ClosedOpportunitiesResponse {
   lost: Opportunity[];
 }
 
+export interface PeriodMetrics {
+  won_count: number;
+  lost_count: number;
+  won_value: number;
+  conversion_rate: number;
+  average_ticket: number;
+}
+
+export interface PeriodComparisonResponse {
+  period: ReportsPeriod;
+  current: PeriodMetrics;
+  previous: PeriodMetrics;
+}
+
 
 export type ReportsPeriod =
   | "7d"
@@ -88,7 +102,26 @@ export interface ReportsResponse {
   monthlySales: MonthlySalesResponse;
 
   closedOpportunities: ClosedOpportunitiesResponse;
+
+  periodComparison: PeriodComparisonResponse;
 }
+
+export async function getPeriodComparison(
+  period: ReportsPeriod,
+): Promise<PeriodComparisonResponse> {
+  const response =
+    await client.get<PeriodComparisonResponse>(
+      "/reports/period-comparison",
+      {
+        params: {
+          period,
+        },
+      },
+    );
+
+  return response.data;
+}
+
 
 export async function getClosedOpportunities(
   period: ReportsPeriod,
@@ -136,6 +169,7 @@ export async function getReports(
     pipeline,
     monthlySales,
     closedOpportunities,
+    periodComparison,
   ] = await Promise.all([
     getCustomers(),
     getOpportunities(),
@@ -146,6 +180,9 @@ export async function getReports(
       period,
     ),
     getClosedOpportunities(
+      period,
+    ),
+    getPeriodComparison(
       period,
     ),
   ]);
@@ -252,5 +289,7 @@ export async function getReports(
     monthlySales,
 
     closedOpportunities,
+
+    periodComparison,
   };
 }

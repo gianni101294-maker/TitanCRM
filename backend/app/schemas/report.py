@@ -16,3 +16,17 @@ class MonthlySalesResponse(BaseModel):
 class ClosedOpportunitiesResponse(BaseModel):
     won: list[OpportunityResponse]
     lost: list[OpportunityResponse]
+
+
+class PeriodMetrics(BaseModel):
+    won_count: int
+    lost_count: int
+    won_value: float
+    conversion_rate: float
+    average_ticket: float
+
+
+class PeriodComparisonResponse(BaseModel):
+    period: str
+    current: PeriodMetrics
+    previous: PeriodMetrics

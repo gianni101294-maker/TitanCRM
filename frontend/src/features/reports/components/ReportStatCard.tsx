@@ -12,6 +12,10 @@ interface ReportStatCardProps {
   description: string;
   icon: ReactNode;
   color?: string;
+  comparison?: {
+    label: string;
+    direction: "up" | "down" | "neutral";
+  };
 }
 
 export function ReportStatCard({
@@ -20,7 +24,22 @@ export function ReportStatCard({
   description,
   icon,
   color = "primary.main",
+  comparison,
 }: ReportStatCardProps) {
+  const comparisonColor =
+    comparison?.direction === "up"
+      ? "success.main"
+      : comparison?.direction === "down"
+        ? "error.main"
+        : "text.secondary";
+
+  const comparisonSymbol =
+    comparison?.direction === "up"
+      ? "↑"
+      : comparison?.direction === "down"
+        ? "↓"
+        : "";
+
   return (
     <Card
       variant="outlined"
@@ -111,6 +130,22 @@ export function ReportStatCard({
         >
           {description}
         </Typography>
+
+        {comparison && (
+          <Typography
+            variant="caption"
+            sx={{
+              display: "block",
+              mt: 1,
+              fontWeight: 700,
+              color: comparisonColor,
+            }}
+          >
+            {comparisonSymbol &&
+              `${comparisonSymbol} `}
+            {comparison.label}
+          </Typography>
+        )}
       </CardContent>
     </Card>
   );

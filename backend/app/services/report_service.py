@@ -224,3 +224,186 @@ def get_monthly_sales(
             in enumerate(monthly_values)
         ],
     }
+
+
+def get_period_date_ranges(
+    period: str,
+) -> tuple[
+    datetime,
+    datetime,
+    datetime,
+    datetime,
+]:
+    now = datetime.now().astimezone()
+
+    if period == "year":
+        current_start = now.replace(
+            month=1,
+            day=1,
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+
+        previous_start = current_start.replace(
+            year=current_start.year - 1,
+        )
+
+        previous_end = current_start
+
+        return (
+            current_start,
+            now,
+            previous_start,
+            previous_end,
+        )
+
+    days_by_period = {
+        "7d": 7,
+        "30d": 30,
+        "90d": 90,
+    }
+
+    days = days_by_period.get(
+        period,
+        30,
+    )
+
+    current_end = now
+    current_start = (
+        current_end -
+        timedelta(days=days)
+    )
+
+    previous_end = current_start
+    previous_start = (
+        previous_end -
+        timedelta(days=days)
+    )
+
+    return (
+        current_start,
+        current_end,
+        previous_start,
+        previous_end,
+    )
+
+
+def calculate_period_metrics(
+    opportunities: list[Opportunity],
+    latest_events: dict[
+        int,
+        OpportunityEvent,
+    ],
+    start_date: datetime,
+    end_date: datetime,
+) -> dict:
+    won_count = 0
+    lost_count = 0
+    won_value = 0.0
+
+    for opportunity in opportunities:
+        event = latest_events.get(
+            opportunity.id
+        )
+
+        closing_date = (
+            event.created_at
+            if event is not None
+            else opportunity.created_at
+        )
+
+        if not (
+            start_date <= closing_date < end_date
+        ):
+            continue
+
+        if opportunity.stage == "won":
+            won_count += 1
+            won_value += float(
+                opportunity.value
+            )
+
+        elif opportunity.stage == "lost":
+            lost_count += 1
+
+    closed_count = (
+        won_count +
+        lost_count
+    )
+
+    conversion_rate = (
+        (won_count / closed_count) * 100
+        if closed_count > 0
+        else 0.0
+    )
+
+    average_ticket = (
+        won_value / won_count
+        if won_count > 0
+        else 0.0
+    )
+
+    return {
+        "won_count": won_count,
+        "lost_count": lost_count,
+        "won_value": won_value,
+        "conversion_rate": conversion_rate,
+        "average_ticket": average_ticket,
+    }
+
+
+def get_period_comparison(
+    db: Session,
+    period: str,
+) -> dict:
+    opportunities = list(
+        db.scalars(
+            select(Opportunity)
+            .where(
+                Opportunity.stage.in_(
+                    ["won", "lost"]
+                )
+            )
+        ).all()
+    )
+
+    opportunity_ids = [
+        opportunity.id
+        for opportunity in opportunities
+    ]
+
+    latest_events = get_latest_closing_events(
+        db,
+        opportunity_ids,
+    )
+
+    (
+        current_start,
+        current_end,
+        previous_start,
+        previous_end,
+    ) = get_period_date_ranges(
+        period,
+    )
+
+    current = calculate_period_metrics(
+        opportunities,
+        latest_events,
+        current_start,
+        current_end,
+    )
+
+    previous = calculate_period_metrics(
+        opportunities,
+        latest_events,
+        previous_start,
+        previous_end,
+    )
+
+    return {
+        "period": period,
+        "current": current,
+        "previous": previous,
+    }

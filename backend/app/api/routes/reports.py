@@ -11,10 +11,12 @@ from app.database.session import get_db
 from app.schemas.report import (
     ClosedOpportunitiesResponse,
     MonthlySalesResponse,
+    PeriodComparisonResponse,
 )
 from app.services.report_service import (
     get_closed_opportunities,
     get_monthly_sales,
+    get_period_comparison,
 )
 
 
@@ -67,6 +69,27 @@ def closed_opportunities(
     ),
 ):
     return get_closed_opportunities(
+        db,
+        period,
+    )
+
+
+@router.get(
+    "/period-comparison",
+    response_model=PeriodComparisonResponse,
+)
+def period_comparison(
+    db: Annotated[
+        Session,
+        Depends(get_db),
+    ],
+    current_user: AdminOrSupervisorUser,
+    period: str = Query(
+        default="30d",
+        pattern="^(7d|30d|90d|year)$",
+    ),
+):
+    return get_period_comparison(
         db,
         period,
     )

@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useState,
 } from "react";
 
@@ -70,7 +69,7 @@ export function useReports(
     };
   }, [period]);
 
-  const metrics = useMemo(() => {
+  const metrics = (() => {
     if (!data) {
       return null;
     }
@@ -215,8 +214,15 @@ export function useReports(
       pipelineStages,
       activitySummary,
       topCustomers,
+
+      comparison: {
+        current:
+          data.periodComparison.current,
+        previous:
+          data.periodComparison.previous,
+      },
     };
-  }, [data]);
+  })();
 
   return {
     data,

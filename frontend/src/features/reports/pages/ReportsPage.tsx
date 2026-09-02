@@ -81,6 +81,72 @@ function formatCurrency(
 }
 
 
+function getComparison(
+  current: number,
+  previous: number,
+) {
+  if (current === 0 && previous === 0) {
+    return {
+      label:
+        "Sin cambios vs. período anterior",
+      direction:
+        "neutral" as const,
+    };
+  }
+
+  if (previous === 0 && current > 0) {
+    return {
+      label:
+        "Nuevo vs. período anterior",
+      direction:
+        "up" as const,
+    };
+  }
+
+  const percentage =
+    ((current - previous) /
+      previous) *
+    100;
+
+  if (percentage > 0) {
+    return {
+      label:
+        `${Math.abs(percentage).toLocaleString(
+          "es-PE",
+          {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+          },
+        )}% vs. período anterior`,
+      direction:
+        "up" as const,
+    };
+  }
+
+  if (percentage < 0) {
+    return {
+      label:
+        `${Math.abs(percentage).toLocaleString(
+          "es-PE",
+          {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+          },
+        )}% vs. período anterior`,
+      direction:
+        "down" as const,
+    };
+  }
+
+  return {
+    label:
+      "Sin cambios vs. período anterior",
+    direction:
+      "neutral" as const,
+  };
+}
+
+
 function getStageLabel(
   stage: string,
 ) {
@@ -356,6 +422,16 @@ export function ReportsPage() {
 
       color:
         "success.main",
+
+      comparison:
+        metrics
+          ? getComparison(
+              metrics.comparison.current
+                .won_value,
+              metrics.comparison.previous
+                .won_value,
+            )
+          : undefined,
     },
 
     {
@@ -419,6 +495,16 @@ export function ReportsPage() {
 
       color:
         "info.main",
+
+      comparison:
+        metrics
+          ? getComparison(
+              metrics.comparison.current
+                .conversion_rate,
+              metrics.comparison.previous
+                .conversion_rate,
+            )
+          : undefined,
     },
 
     {
@@ -440,6 +526,16 @@ export function ReportsPage() {
 
       color:
         "secondary.main",
+
+      comparison:
+        metrics
+          ? getComparison(
+              metrics.comparison.current
+                .average_ticket,
+              metrics.comparison.previous
+                .average_ticket,
+            )
+          : undefined,
     },
 
     {
@@ -913,6 +1009,10 @@ export function ReportsPage() {
 
               color={
                 stat.color
+              }
+
+              comparison={
+                stat.comparison
               }
             />
           ),
