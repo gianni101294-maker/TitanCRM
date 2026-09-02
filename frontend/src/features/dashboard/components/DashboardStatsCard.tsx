@@ -12,6 +12,10 @@ interface DashboardStatsCardProps {
   description: string;
   icon: ReactNode;
   color?: string;
+  comparison?: {
+    label: string;
+    direction: "up" | "down" | "neutral";
+  };
 }
 
 export function DashboardStatsCard({
@@ -20,7 +24,22 @@ export function DashboardStatsCard({
   description,
   icon,
   color = "primary.main",
+  comparison,
 }: DashboardStatsCardProps) {
+  const comparisonColor =
+    comparison?.direction === "up"
+      ? "success.main"
+      : comparison?.direction === "down"
+        ? "error.main"
+        : "text.secondary";
+
+  const comparisonSymbol =
+    comparison?.direction === "up"
+      ? "↑"
+      : comparison?.direction === "down"
+        ? "↓"
+        : "";
+
   return (
     <Card
       variant="outlined"
@@ -58,7 +77,12 @@ export function DashboardStatsCard({
             gap: 2,
           }}
         >
-          <Box sx={{ minWidth: 0 }}>
+          <Box
+            sx={{
+              minWidth: 0,
+              flex: 1,
+            }}
+          >
             <Typography
               variant="body2"
               color="text.secondary"
@@ -106,6 +130,22 @@ export function DashboardStatsCard({
         >
           {description}
         </Typography>
+
+        {comparison && (
+          <Typography
+            variant="caption"
+            sx={{
+              display: "block",
+              mt: 1,
+              fontWeight: 700,
+              color: comparisonColor,
+            }}
+          >
+            {comparisonSymbol &&
+              `${comparisonSymbol} `}
+            {comparison.label}
+          </Typography>
+        )}
       </CardContent>
     </Card>
   );

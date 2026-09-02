@@ -12,6 +12,20 @@ class OpportunitiesByStage(BaseModel):
     lost: int
 
 
+class DashboardComparisonMetrics(BaseModel):
+    total_customers: int
+    total_opportunities: int
+    pending_activities: int
+    won_count: int
+    lost_count: int
+    conversion_rate: float
+
+
+class DashboardComparison(BaseModel):
+    current: DashboardComparisonMetrics
+    previous: DashboardComparisonMetrics
+
+
 class DashboardResponse(BaseModel):
     period: str
     total_customers: int
@@ -23,3 +37,4 @@ class DashboardResponse(BaseModel):
     pending_activities: int
     overdue_activities: int
     upcoming_activities: int
+    comparison: DashboardComparison

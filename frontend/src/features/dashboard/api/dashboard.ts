@@ -15,6 +15,20 @@ export interface OpportunitiesByStage {
   lost: number;
 }
 
+export interface DashboardComparisonMetrics {
+  total_customers: number;
+  total_opportunities: number;
+  pending_activities: number;
+  won_count: number;
+  lost_count: number;
+  conversion_rate: number;
+}
+
+export interface DashboardComparison {
+  current: DashboardComparisonMetrics;
+  previous: DashboardComparisonMetrics;
+}
+
 export interface DashboardResponse {
   period: DashboardPeriod;
   total_customers: number;
@@ -26,6 +40,7 @@ export interface DashboardResponse {
   pending_activities: number;
   overdue_activities: number;
   upcoming_activities: number;
+  comparison: DashboardComparison;
 }
 
 function getAuthHeaders() {

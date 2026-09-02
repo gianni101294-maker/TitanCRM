@@ -38,6 +38,72 @@ function formatCurrency(value: number | string) {
   });
 }
 
+function getComparison(
+  current: number,
+  previous: number,
+) {
+  if (current === 0 && previous === 0) {
+    return {
+      label:
+        "Sin cambios vs. período anterior",
+      direction:
+        "neutral" as const,
+    };
+  }
+
+  if (previous === 0 && current > 0) {
+    return {
+      label:
+        "Nuevo vs. período anterior",
+      direction:
+        "up" as const,
+    };
+  }
+
+  const percentage =
+    ((current - previous) /
+      previous) *
+    100;
+
+  if (percentage > 0) {
+    return {
+      label:
+        `${Math.abs(percentage).toLocaleString(
+          "es-PE",
+          {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+          },
+        )}% vs. período anterior`,
+      direction:
+        "up" as const,
+    };
+  }
+
+  if (percentage < 0) {
+    return {
+      label:
+        `${Math.abs(percentage).toLocaleString(
+          "es-PE",
+          {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+          },
+        )}% vs. período anterior`,
+      direction:
+        "down" as const,
+    };
+  }
+
+  return {
+    label:
+      "Sin cambios vs. período anterior",
+    direction:
+      "neutral" as const,
+  };
+}
+
+
 export function Dashboard() {
   const [
     period,
@@ -89,6 +155,14 @@ export function Dashboard() {
       description: "Clientes registrados",
       icon: <Groups />,
       color: "primary.main",
+      comparison: data
+        ? getComparison(
+            data.comparison.current
+              .total_customers,
+            data.comparison.previous
+              .total_customers,
+          )
+        : undefined,
     },
     {
       title: "Oportunidades",
@@ -96,6 +170,14 @@ export function Dashboard() {
       description: "Negocios activos",
       icon: <Work />,
       color: "secondary.main",
+      comparison: data
+        ? getComparison(
+            data.comparison.current
+              .total_opportunities,
+            data.comparison.previous
+              .total_opportunities,
+          )
+        : undefined,
     },
     {
       title: "Pipeline",
@@ -114,6 +196,14 @@ export function Dashboard() {
       description: "Actividades abiertas",
       icon: <CalendarMonth />,
       color: "warning.main",
+      comparison: data
+        ? getComparison(
+            data.comparison.current
+              .pending_activities,
+            data.comparison.previous
+              .pending_activities,
+          )
+        : undefined,
     },
     {
       title: "Conversión",
@@ -121,6 +211,14 @@ export function Dashboard() {
       description: "Oportunidades ganadas",
       icon: <Percent />,
       color: "info.main",
+      comparison: data
+        ? getComparison(
+            data.comparison.current
+              .conversion_rate,
+            data.comparison.previous
+              .conversion_rate,
+          )
+        : undefined,
     },
   ];
 
@@ -186,6 +284,7 @@ export function Dashboard() {
             description={stat.description}
             icon={stat.icon}
             color={stat.color}
+            comparison={stat.comparison}
           />
         ))}
       </Box>
