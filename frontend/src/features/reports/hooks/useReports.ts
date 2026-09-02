@@ -10,7 +10,13 @@ import {
   type ReportsResponse,
 } from "../api/reports";
 
-export function useReports() {
+import type {
+  ReportPeriod,
+} from "../components/ReportFilterBar";
+
+export function useReports(
+  period: ReportPeriod,
+) {
   const [data, setData] =
     useState<ReportsResponse | null>(null);
 
@@ -22,7 +28,7 @@ export function useReports() {
     setError("");
 
     try {
-      const reportData = await getReports();
+      const reportData = await getReports(period);
       setData(reportData);
     } catch {
       setError(
@@ -31,14 +37,14 @@ export function useReports() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [period]);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadInitialReports() {
       try {
-        const reportData = await getReports();
+        const reportData = await getReports(period);
 
         if (isMounted) {
           setData(reportData);
@@ -62,7 +68,7 @@ export function useReports() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [period]);
 
   const metrics = useMemo(() => {
     if (!data) {
@@ -76,8 +82,11 @@ export function useReports() {
       ...data.pipeline.negotiation,
     ];
 
-    const wonOpportunities = data.pipeline.won;
-    const lostOpportunities = data.pipeline.lost;
+    const wonOpportunities =
+      data.closedOpportunities.won;
+
+    const lostOpportunities =
+      data.closedOpportunities.lost;
 
     const closedOpportunities =
       wonOpportunities.length +

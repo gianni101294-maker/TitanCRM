@@ -176,7 +176,7 @@ export function ReportsPage() {
     error,
     reload,
   } =
-    useReports();
+    useReports(period);
 
 
   const monthlySales =

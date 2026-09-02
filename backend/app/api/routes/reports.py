@@ -8,8 +8,14 @@ from sqlalchemy.orm import Session
 
 from app.auth.permissions import AdminOrSupervisorUser
 from app.database.session import get_db
-from app.schemas.report import MonthlySalesResponse
-from app.services.report_service import get_monthly_sales
+from app.schemas.report import (
+    ClosedOpportunitiesResponse,
+    MonthlySalesResponse,
+)
+from app.services.report_service import (
+    get_closed_opportunities,
+    get_monthly_sales,
+)
 
 
 router = APIRouter(
@@ -33,8 +39,34 @@ def monthly_sales(
         ge=2000,
         le=2100,
     ),
+    period: str = Query(
+        default="year",
+        pattern="^(7d|30d|90d|year)$",
+    ),
 ):
     return get_monthly_sales(
         db,
         year,
+        period,
+    )
+
+
+@router.get(
+    "/closed-opportunities",
+    response_model=ClosedOpportunitiesResponse,
+)
+def closed_opportunities(
+    db: Annotated[
+        Session,
+        Depends(get_db),
+    ],
+    current_user: AdminOrSupervisorUser,
+    period: str = Query(
+        default="30d",
+        pattern="^(7d|30d|90d|year)$",
+    ),
+):
+    return get_closed_opportunities(
+        db,
+        period,
     )

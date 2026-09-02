@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from app.schemas.opportunity import OpportunityResponse
+
 
 class MonthlySalesItem(BaseModel):
     month: str
@@ -9,3 +11,8 @@ class MonthlySalesItem(BaseModel):
 class MonthlySalesResponse(BaseModel):
     year: int
     months: list[MonthlySalesItem]
+
+
+class ClosedOpportunitiesResponse(BaseModel):
+    won: list[OpportunityResponse]
+    lost: list[OpportunityResponse]
