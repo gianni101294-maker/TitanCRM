@@ -41,6 +41,7 @@ function formatCurrency(value: number | string) {
 function getComparison(
   current: number,
   previous: number,
+  lowerIsBetter = false,
 ) {
   if (current === 0 && previous === 0) {
     return {
@@ -56,7 +57,9 @@ function getComparison(
       label:
         "Nuevo vs. período anterior",
       direction:
-        "up" as const,
+        lowerIsBetter
+          ? "down" as const
+          : "up" as const,
     };
   }
 
@@ -76,7 +79,9 @@ function getComparison(
           },
         )}% vs. período anterior`,
       direction:
-        "up" as const,
+        lowerIsBetter
+          ? "down" as const
+          : "up" as const,
     };
   }
 
@@ -91,7 +96,9 @@ function getComparison(
           },
         )}% vs. período anterior`,
       direction:
-        "down" as const,
+        lowerIsBetter
+          ? "up" as const
+          : "down" as const,
     };
   }
 
@@ -202,6 +209,7 @@ export function Dashboard() {
               .pending_activities,
             data.comparison.previous
               .pending_activities,
+            true,
           )
         : undefined,
     },
