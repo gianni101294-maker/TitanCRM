@@ -3,8 +3,7 @@ from datetime import timedelta
 from datetime import timezone
 from typing import Any
 
-import jwt
-from jwt.exceptions import InvalidTokenError
+from jose import JWTError, jwt
 from pwdlib import PasswordHash
 
 from app.core.config import settings
@@ -85,5 +84,5 @@ def decode_access_token(
                 ],
             },
         )
-    except InvalidTokenError:
+    except JWTError:
         return None
