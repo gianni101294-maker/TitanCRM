@@ -10,14 +10,6 @@ import {
 } from "react-router-dom";
 
 import {
-  getDefaultRouteForRole,
-} from "@/features/auth/defaultRoute";
-
-import {
-  usePermissions,
-} from "@/features/auth/hooks/usePermissions";
-
-import {
   PERMISSIONS,
 } from "@/features/auth/permissions";
 
@@ -99,20 +91,6 @@ const UsersPage = lazy(() =>
 );
 
 function App() {
-  const accessToken =
-    localStorage.getItem(
-      "titancrm_access_token",
-    );
-
-  const {
-    role,
-  } = usePermissions();
-
-  const defaultRoute =
-    accessToken && role
-      ? getDefaultRouteForRole(role)
-      : "/login";
-
   return (
     <Suspense
       fallback={
@@ -125,16 +103,7 @@ function App() {
       <Routes>
         <Route
           path="/login"
-          element={
-            accessToken && role ? (
-              <Navigate
-                to={defaultRoute}
-                replace
-              />
-            ) : (
-              <LoginPage />
-            )
-          }
+          element={<LoginPage />}
         />
 
         <Route
@@ -246,7 +215,7 @@ function App() {
           path="/"
           element={
             <Navigate
-              to={defaultRoute}
+              to="/login"
               replace
             />
           }
@@ -256,7 +225,7 @@ function App() {
           path="*"
           element={
             <Navigate
-              to={defaultRoute}
+              to="/login"
               replace
             />
           }
