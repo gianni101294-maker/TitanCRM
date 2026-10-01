@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useState,
+  type FormEvent,
 } from "react";
 
 import {
@@ -22,9 +23,15 @@ import {
 } from "@mui/icons-material";
 
 import {
+  createAutomation,
   getAutomations,
   type AutomationRule,
+  type AutomationRuleCreate,
 } from "../index";
+
+import {
+  AutomationFormDialog,
+} from "../components/AutomationFormDialog";
 
 import {
   PageHeader,
@@ -33,6 +40,33 @@ import {
 import {
   DashboardLayout,
 } from "@/layouts/DashboardLayout";
+
+const initialFormData: AutomationRuleCreate = {
+  name: "",
+  description: null,
+  trigger_type: "opportunity_stage_changed",
+  conditions: {
+    stage: "proposal",
+  },
+  action_type: "create_activity",
+  action_config: {
+    activity_type: "call",
+    delay_days: 0,
+  },
+  is_active: true,
+};
+
+function createInitialFormData(): AutomationRuleCreate {
+  return {
+    ...initialFormData,
+    conditions: {
+      ...initialFormData.conditions,
+    },
+    action_config: {
+      ...initialFormData.action_config,
+    },
+  };
+}
 
 function getErrorMessage(
   error: unknown,
@@ -57,7 +91,7 @@ function getErrorMessage(
     }
   }
 
-  return "No se pudieron cargar las automatizaciones.";
+  return "No se pudo completar la operación.";
 }
 
 export function AutomationsPage() {
@@ -75,6 +109,28 @@ export function AutomationsPage() {
     errorMessage,
     setErrorMessage,
   ] = useState("");
+
+  const [
+    isFormOpen,
+    setIsFormOpen,
+  ] = useState(false);
+
+  const [
+    formData,
+    setFormData,
+  ] = useState<AutomationRuleCreate>(
+    createInitialFormData,
+  );
+
+  const [
+    formError,
+    setFormError,
+  ] = useState("");
+
+  const [
+    isSaving,
+    setIsSaving,
+  ] = useState(false);
 
   const loadAutomations =
     useCallback(async () => {
@@ -99,6 +155,58 @@ export function AutomationsPage() {
     void loadAutomations();
   }, [loadAutomations]);
 
+  function openCreateDialog() {
+    setFormData(
+      createInitialFormData(),
+    );
+    setFormError("");
+    setIsFormOpen(true);
+  }
+
+  function closeFormDialog() {
+    if (isSaving) {
+      return;
+    }
+
+    setIsFormOpen(false);
+    setFormError("");
+  }
+
+  function handleFieldChange<
+    K extends keyof AutomationRuleCreate,
+  >(
+    field: K,
+    value: AutomationRuleCreate[K],
+  ) {
+    setFormData((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    setIsSaving(true);
+    setFormError("");
+
+    try {
+      await createAutomation(formData);
+
+      setIsFormOpen(false);
+
+      await loadAutomations();
+    } catch (error) {
+      setFormError(
+        getErrorMessage(error),
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return (
     <DashboardLayout title="Automatizaciones">
       <PageHeader
@@ -108,7 +216,7 @@ export function AutomationsPage() {
           <Button
             variant="contained"
             startIcon={<Add />}
-            disabled
+            onClick={openCreateDialog}
           >
             Nueva automatización
           </Button>
@@ -208,7 +316,8 @@ export function AutomationsPage() {
                     }}
                     spacing={2}
                     sx={{
-                      justifyContent: "space-between",
+                      justifyContent:
+                        "space-between",
                     }}
                   >
                     <Box>
@@ -289,6 +398,17 @@ export function AutomationsPage() {
           )}
         </Stack>
       )}
+
+      <AutomationFormDialog
+        open={isFormOpen}
+        automation={null}
+        formData={formData}
+        formError={formError}
+        isSaving={isSaving}
+        onClose={closeFormDialog}
+        onSubmit={handleSubmit}
+        onFieldChange={handleFieldChange}
+      />
     </DashboardLayout>
   );
 }
