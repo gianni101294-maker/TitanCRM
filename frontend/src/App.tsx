@@ -10,6 +10,14 @@ import {
 } from "react-router-dom";
 
 import {
+  getDefaultRouteForRole,
+} from "@/features/auth/defaultRoute";
+
+import {
+  usePermissions,
+} from "@/features/auth/hooks/usePermissions";
+
+import {
   PERMISSIONS,
 } from "@/features/auth/permissions";
 
@@ -96,6 +104,15 @@ function App() {
       "titancrm_access_token",
     );
 
+  const {
+    role,
+  } = usePermissions();
+
+  const defaultRoute =
+    accessToken && role
+      ? getDefaultRouteForRole(role)
+      : "/login";
+
   return (
     <Suspense
       fallback={
@@ -109,9 +126,9 @@ function App() {
         <Route
           path="/login"
           element={
-            accessToken ? (
+            accessToken && role ? (
               <Navigate
-                to="/dashboard"
+                to={defaultRoute}
                 replace
               />
             ) : (
@@ -229,11 +246,7 @@ function App() {
           path="/"
           element={
             <Navigate
-              to={
-                accessToken
-                  ? "/dashboard"
-                  : "/login"
-              }
+              to={defaultRoute}
               replace
             />
           }
@@ -243,11 +256,7 @@ function App() {
           path="*"
           element={
             <Navigate
-              to={
-                accessToken
-                  ? "/dashboard"
-                  : "/login"
-              }
+              to={defaultRoute}
               replace
             />
           }

@@ -17,6 +17,12 @@ import {
 } from "@mui/material";
 
 import { login } from "../api/auth";
+import {
+  getDefaultRouteForRole,
+} from "../defaultRoute";
+import {
+  isUserRole,
+} from "../roles";
 
 function getLoginErrorMessage(
   error: unknown,
@@ -79,6 +85,12 @@ export function LoginPage() {
         password,
       );
 
+      if (!isUserRole(data.user.role)) {
+        throw new Error(
+          "El usuario tiene un rol no válido.",
+        );
+      }
+
       localStorage.setItem(
         "titancrm_access_token",
         data.access_token,
@@ -95,7 +107,9 @@ export function LoginPage() {
       );
 
       navigate(
-        "/dashboard",
+        getDefaultRouteForRole(
+          data.user.role,
+        ),
         {
           replace: true,
         },
