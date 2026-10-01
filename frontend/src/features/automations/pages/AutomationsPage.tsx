@@ -26,6 +26,14 @@ import {
   type AutomationRule,
 } from "../index";
 
+import {
+  PageHeader,
+} from "@/components/common/PageHeader";
+
+import {
+  DashboardLayout,
+} from "@/layouts/DashboardLayout";
+
 function getErrorMessage(
   error: unknown,
 ): string {
@@ -92,51 +100,20 @@ export function AutomationsPage() {
   }, [loadAutomations]);
 
   return (
-    <Box>
-      <Stack
-        direction={{
-          xs: "column",
-          sm: "row",
-        }}
-        spacing={2}
-        sx={{
-          mb: 3,
-          justifyContent: "space-between",
-          alignItems: {
-            xs: "stretch",
-            sm: "center",
-          },
-        }}
-      >
-        <Box>
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 800,
-            }}
+    <DashboardLayout title="Automatizaciones">
+      <PageHeader
+        title="Automatizaciones"
+        description="Automatiza tareas y seguimientos comerciales de TitanCRM."
+        action={
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            disabled
           >
-            Automatizaciones
-          </Typography>
-
-          <Typography
-            color="text.secondary"
-            sx={{
-              mt: 0.5,
-            }}
-          >
-            Automatiza tareas y seguimientos
-            comerciales de TitanCRM.
-          </Typography>
-        </Box>
-
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          disabled
-        >
-          Nueva automatización
-        </Button>
-      </Stack>
+            Nueva automatización
+          </Button>
+        }
+      />
 
       {errorMessage && (
         <Alert
@@ -312,6 +289,6 @@ export function AutomationsPage() {
           )}
         </Stack>
       )}
-    </Box>
+    </DashboardLayout>
   );
 }
