@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import {
   Assessment,
+  AutoAwesome,
   CalendarMonth,
   Dashboard,
   Groups,
@@ -90,6 +91,13 @@ const menuItems: MenuItem[] = [
     icon: <Assessment />,
     permission:
       PERMISSIONS.REPORTS_VIEW,
+  },
+  {
+    label: "Automatizaciones",
+    path: "/automations",
+    icon: <AutoAwesome />,
+    permission:
+      PERMISSIONS.AUTOMATIONS_VIEW,
   },
   {
     label: "Usuarios",

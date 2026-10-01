@@ -38,6 +38,11 @@ export const PERMISSIONS = {
   USERS_DELETE: "users.delete",
   USERS_ASSIGN_ROLES: "users.assign_roles",
 
+  AUTOMATIONS_VIEW: "automations.view",
+  AUTOMATIONS_CREATE: "automations.create",
+  AUTOMATIONS_EDIT: "automations.edit",
+  AUTOMATIONS_DELETE: "automations.delete",
+
   SETTINGS_VIEW: "settings.view",
   SETTINGS_EDIT: "settings.edit",
 } as const;

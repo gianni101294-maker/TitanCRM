@@ -82,6 +82,14 @@ const ReportsPage = lazy(() =>
   ),
 );
 
+const AutomationsPage = lazy(() =>
+  import("@/features/automations").then(
+    (module) => ({
+      default: module.AutomationsPage,
+    }),
+  ),
+);
+
 const UsersPage = lazy(() =>
   import("@/features/users").then(
     (module) => ({
@@ -191,6 +199,21 @@ function App() {
                 }
               >
                 <ReportsPage />
+              </PermissionRoute>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/automations"
+          element={
+            <ProtectedRoute>
+              <PermissionRoute
+                permission={
+                  PERMISSIONS.AUTOMATIONS_VIEW
+                }
+              >
+                <AutomationsPage />
               </PermissionRoute>
             </ProtectedRoute>
           }
