@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 import app.models
@@ -21,10 +21,12 @@ from app.api.routes.reports import (
     router as reports_router,
 )
 
+
 app = FastAPI(
     title="TitanCRM API",
     version="1.0.0",
 )
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,6 +39,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 app.include_router(auth_router)
 app.include_router(automations_router)
@@ -57,8 +60,18 @@ def root():
     }
 
 
+@app.head("/")
+def root_head():
+    return Response(status_code=200)
+
+
 @app.get("/health")
 def health():
     return {
         "status": "ok",
     }
+
+
+@app.head("/health")
+def health_head():
+    return Response(status_code=200)
