@@ -449,56 +449,85 @@ export function AutomationFormDialog({
             }}
           />
 
-          <Typography
-            variant="subtitle2"
+          <Box
             sx={{
-              mt: 2.5,
-              fontWeight: 700,
+              mt: 3,
+              p: 2,
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 2,
+              backgroundColor: "background.default",
             }}
           >
-            Personalización de la actividad
-          </Typography>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 700,
+              }}
+            >
+              Personalización de la actividad
+            </Typography>
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{
-              mt: 0.5,
-              mb: 1,
-            }}
-          >
-            Estos campos son opcionales. Si los
-            dejas vacíos, TitanCRM generará el
-            título y la descripción automáticamente.
-          </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                mt: 0.5,
+                mb: 2,
+              }}
+            >
+              Estos campos son opcionales. Si los
+              dejas vacíos, TitanCRM generará el
+              título y la descripción automáticamente.
+            </Typography>
 
-          <TextField
-            fullWidth
-            label="Título personalizado"
-            value={customTitle}
-            onChange={(event) =>
-              changeCustomTitle(
-                event.target.value,
-              )
-            }
-            placeholder="Ejemplo: Llamar al cliente por propuesta"
-            margin="normal"
-          />
+            <Typography
+              variant="body2"
+              sx={{
+                mb: 0.75,
+                fontWeight: 600,
+              }}
+            >
+              Título personalizado
+            </Typography>
 
-          <TextField
-            fullWidth
-            multiline
-            minRows={2}
-            label="Descripción de la actividad"
-            value={customDescription}
-            onChange={(event) =>
-              changeCustomDescription(
-                event.target.value,
-              )
-            }
-            placeholder="Ejemplo: Revisar la propuesta enviada y resolver dudas."
-            margin="normal"
-          />
+            <TextField
+              fullWidth
+              value={customTitle}
+              onChange={(event) =>
+                changeCustomTitle(
+                  event.target.value,
+                )
+              }
+              placeholder="Ejemplo: Preparar documentación de cierre"
+              margin="normal"
+            />
+
+            <Typography
+              variant="body2"
+              sx={{
+                mt: 1.5,
+                mb: 0.75,
+                fontWeight: 600,
+              }}
+            >
+              Descripción de la actividad
+            </Typography>
+
+            <TextField
+              fullWidth
+              multiline
+              minRows={3}
+              value={customDescription}
+              onChange={(event) =>
+                changeCustomDescription(
+                  event.target.value,
+                )
+              }
+              placeholder="Ejemplo: Preparar documentación y pasos posteriores al cierre de la oportunidad."
+              margin="normal"
+            />
+          </Box>
 
           <FormControlLabel
             sx={{
