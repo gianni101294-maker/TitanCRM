@@ -18,6 +18,7 @@ import {
   DialogTitle,
   FormControlLabel,
   MenuItem,
+  Stack,
   Switch,
   TextField,
   Typography,
@@ -36,6 +37,7 @@ import type {
   AutomationRuleCreate,
 } from "../types";
 
+
 interface AutomationFormDialogProps {
   open: boolean;
   automation: AutomationRule | null;
@@ -53,6 +55,27 @@ interface AutomationFormDialogProps {
     value: AutomationRuleCreate[K],
   ) => void;
 }
+
+
+const delayOptions = [
+  {
+    label: "Inmediatamente",
+    value: 0,
+  },
+  {
+    label: "1 día después",
+    value: 1,
+  },
+  {
+    label: "3 días después",
+    value: 3,
+  },
+  {
+    label: "7 días después",
+    value: 7,
+  },
+];
+
 
 export function AutomationFormDialog({
   open,
@@ -83,7 +106,25 @@ export function AutomationFormDialog({
       ? formData.action_config.delay_days
       : 0;
 
-  function changeStage(value: string) {
+  const customTitle =
+    typeof formData.action_config.title === "string"
+      ? formData.action_config.title
+      : "";
+
+  const customDescription =
+    typeof formData.action_config.description ===
+    "string"
+      ? formData.action_config.description
+      : "";
+
+  const hasPresetDelay = delayOptions.some(
+    (option) => option.value === delayDays,
+  );
+
+
+  function changeStage(
+    value: string,
+  ) {
     onFieldChange(
       "conditions",
       {
@@ -93,7 +134,10 @@ export function AutomationFormDialog({
     );
   }
 
-  function changeActivityType(value: string) {
+
+  function changeActivityType(
+    value: string,
+  ) {
     onFieldChange(
       "action_config",
       {
@@ -103,7 +147,10 @@ export function AutomationFormDialog({
     );
   }
 
-  function changeDelayDays(value: number) {
+
+  function changeDelayDays(
+    value: number,
+  ) {
     onFieldChange(
       "action_config",
       {
@@ -112,6 +159,33 @@ export function AutomationFormDialog({
       },
     );
   }
+
+
+  function changeCustomTitle(
+    value: string,
+  ) {
+    onFieldChange(
+      "action_config",
+      {
+        ...formData.action_config,
+        title: value || undefined,
+      },
+    );
+  }
+
+
+  function changeCustomDescription(
+    value: string,
+  ) {
+    onFieldChange(
+      "action_config",
+      {
+        ...formData.action_config,
+        description: value || undefined,
+      },
+    );
+  }
+
 
   return (
     <Dialog
@@ -225,7 +299,9 @@ export function AutomationFormDialog({
             label="Nueva etapa"
             value={stage}
             onChange={(event) =>
-              changeStage(event.target.value)
+              changeStage(
+                event.target.value,
+              )
             }
             required
             margin="normal"
@@ -296,21 +372,74 @@ export function AutomationFormDialog({
             )}
           </TextField>
 
+          <Typography
+            variant="subtitle2"
+            sx={{
+              mt: 2.5,
+              mb: 1,
+              fontWeight: 700,
+            }}
+          >
+            Programación
+          </Typography>
+
+          <Stack
+            direction="row"
+            spacing={1}
+            useFlexGap
+            sx={{
+              mb: 1,
+              flexWrap: "wrap",
+            }}
+          >
+            {delayOptions.map(
+              (option) => (
+                <Button
+                  key={option.value}
+                  type="button"
+                  variant={
+                    delayDays === option.value
+                      ? "contained"
+                      : "outlined"
+                  }
+                  size="small"
+                  onClick={() =>
+                    changeDelayDays(
+                      option.value,
+                    )
+                  }
+                >
+                  {option.label}
+                </Button>
+              ),
+            )}
+          </Stack>
+
           <TextField
             fullWidth
             type="number"
-            label="Crear después de"
-            value={delayDays}
-            onChange={(event) =>
-              changeDelayDays(
-                Math.max(
-                  0,
-                  Number(event.target.value),
-                ),
-              )
+            label="Días personalizados"
+            value={
+              hasPresetDelay
+                ? ""
+                : delayDays
             }
-            helperText="Número de días después del cambio de etapa."
-            required
+            onChange={(event) => {
+              const value =
+                event.target.value === ""
+                  ? 0
+                  : Math.max(
+                      0,
+                      Number(
+                        event.target.value,
+                      ),
+                    );
+
+              changeDelayDays(value);
+            }}
+            helperText={
+              "Puedes usar una opción rápida o indicar otra cantidad de días."
+            }
             margin="normal"
             slotProps={{
               htmlInput: {
@@ -320,13 +449,66 @@ export function AutomationFormDialog({
             }}
           />
 
+          <Typography
+            variant="subtitle2"
+            sx={{
+              mt: 2.5,
+              fontWeight: 700,
+            }}
+          >
+            Personalización de la actividad
+          </Typography>
+
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              mt: 0.5,
+              mb: 1,
+            }}
+          >
+            Estos campos son opcionales. Si los
+            dejas vacíos, TitanCRM generará el
+            título y la descripción automáticamente.
+          </Typography>
+
+          <TextField
+            fullWidth
+            label="Título personalizado"
+            value={customTitle}
+            onChange={(event) =>
+              changeCustomTitle(
+                event.target.value,
+              )
+            }
+            placeholder="Ejemplo: Llamar al cliente por propuesta"
+            margin="normal"
+          />
+
+          <TextField
+            fullWidth
+            multiline
+            minRows={2}
+            label="Descripción de la actividad"
+            value={customDescription}
+            onChange={(event) =>
+              changeCustomDescription(
+                event.target.value,
+              )
+            }
+            placeholder="Ejemplo: Revisar la propuesta enviada y resolver dudas."
+            margin="normal"
+          />
+
           <FormControlLabel
             sx={{
               mt: 2,
             }}
             control={
               <Switch
-                checked={formData.is_active}
+                checked={
+                  formData.is_active
+                }
                 onChange={(event) =>
                   onFieldChange(
                     "is_active",

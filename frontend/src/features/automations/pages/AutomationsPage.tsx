@@ -41,6 +41,15 @@ import {
   DashboardLayout,
 } from "@/layouts/DashboardLayout";
 
+import {
+  activityTypeOptions,
+} from "@/features/activities/utils/activityType";
+
+import {
+  opportunityStageOptions,
+} from "@/features/opportunities/utils/opportunityStage";
+
+
 const initialFormData: AutomationRuleCreate = {
   name: "",
   description: null,
@@ -56,6 +65,7 @@ const initialFormData: AutomationRuleCreate = {
   is_active: true,
 };
 
+
 function createInitialFormData(): AutomationRuleCreate {
   return {
     ...initialFormData,
@@ -67,6 +77,7 @@ function createInitialFormData(): AutomationRuleCreate {
     },
   };
 }
+
 
 function getErrorMessage(
   error: unknown,
@@ -93,6 +104,90 @@ function getErrorMessage(
 
   return "No se pudo completar la operación.";
 }
+
+
+function getStageLabel(
+  automation: AutomationRule,
+): string {
+  const stage = automation.conditions.stage;
+
+  if (typeof stage !== "string") {
+    return "Sin condición";
+  }
+
+  const option =
+    opportunityStageOptions.find(
+      (item) => item.value === stage,
+    );
+
+  return option?.label ?? stage;
+}
+
+
+function getActivityTypeLabel(
+  automation: AutomationRule,
+): string {
+  const activityType =
+    automation.action_config.activity_type;
+
+  if (typeof activityType !== "string") {
+    return "Actividad";
+  }
+
+  const option =
+    activityTypeOptions.find(
+      (item) =>
+        item.value === activityType,
+    );
+
+  return option?.label ?? activityType;
+}
+
+
+function getDelayLabel(
+  automation: AutomationRule,
+): string {
+  const delayDays =
+    automation.action_config.delay_days;
+
+  if (
+    typeof delayDays !== "number"
+  ) {
+    return "Sin programación";
+  }
+
+  if (delayDays === 0) {
+    return "Inmediatamente";
+  }
+
+  if (delayDays === 1) {
+    return "1 día después";
+  }
+
+  return `${delayDays} días después`;
+}
+
+
+function getActionSummary(
+  automation: AutomationRule,
+): string {
+  if (
+    automation.action_type
+    !== "create_activity"
+  ) {
+    return automation.action_type;
+  }
+
+  return [
+    getActivityTypeLabel(
+      automation,
+    ),
+    getDelayLabel(
+      automation,
+    ),
+  ].join(" · ");
+}
+
 
 export function AutomationsPage() {
   const [
@@ -132,6 +227,7 @@ export function AutomationsPage() {
     setIsSaving,
   ] = useState(false);
 
+
   const loadAutomations =
     useCallback(async () => {
       setIsLoading(true);
@@ -151,17 +247,21 @@ export function AutomationsPage() {
       }
     }, []);
 
+
   useEffect(() => {
     void loadAutomations();
   }, [loadAutomations]);
+
 
   function openCreateDialog() {
     setFormData(
       createInitialFormData(),
     );
+
     setFormError("");
     setIsFormOpen(true);
   }
+
 
   function closeFormDialog() {
     if (isSaving) {
@@ -171,6 +271,7 @@ export function AutomationsPage() {
     setIsFormOpen(false);
     setFormError("");
   }
+
 
   function handleFieldChange<
     K extends keyof AutomationRuleCreate,
@@ -184,6 +285,7 @@ export function AutomationsPage() {
     }));
   }
 
+
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ) {
@@ -193,7 +295,9 @@ export function AutomationsPage() {
     setFormError("");
 
     try {
-      await createAutomation(formData);
+      await createAutomation(
+        formData,
+      );
 
       setIsFormOpen(false);
 
@@ -206,6 +310,7 @@ export function AutomationsPage() {
       setIsSaving(false);
     }
   }
+
 
   return (
     <DashboardLayout title="Automatizaciones">
@@ -350,11 +455,10 @@ export function AutomationsPage() {
                         }}
                       >
                         <strong>
-                          Disparador:
+                          Cuando:
                         </strong>{" "}
-                        {
-                          automation.trigger_type
-                        }
+                        cambie la etapa de una
+                        oportunidad
                       </Typography>
 
                       <Typography
@@ -364,10 +468,31 @@ export function AutomationsPage() {
                         }}
                       >
                         <strong>
-                          Acción:
+                          Si:
+                        </strong>{" "}
+                        la nueva etapa es{" "}
+                        <strong>
+                          {
+                            getStageLabel(
+                              automation,
+                            )
+                          }
+                        </strong>
+                      </Typography>
+
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          mt: 0.5,
+                        }}
+                      >
+                        <strong>
+                          Entonces:
                         </strong>{" "}
                         {
-                          automation.action_type
+                          getActionSummary(
+                            automation,
+                          )
                         }
                       </Typography>
                     </Box>
@@ -407,7 +532,9 @@ export function AutomationsPage() {
         isSaving={isSaving}
         onClose={closeFormDialog}
         onSubmit={handleSubmit}
-        onFieldChange={handleFieldChange}
+        onFieldChange={
+          handleFieldChange
+        }
       />
     </DashboardLayout>
   );
