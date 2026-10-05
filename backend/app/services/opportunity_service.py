@@ -9,6 +9,9 @@ from app.schemas.opportunity import (
     OpportunityUpdate,
 )
 
+from app.services.automation_service import (
+    execute_automation_trigger,
+)
 from app.services.opportunity_event_service import (
     create_opportunity_event,
 )
@@ -288,6 +291,7 @@ def edit_opportunity(
                 if old_value is not None
                 else "Sin definir"
             )
+
             new_display = (
                 f"{new_value}%"
                 if new_value is not None
@@ -300,6 +304,7 @@ def edit_opportunity(
                 if old_value is not None
                 else "Sin definir"
             )
+
             new_display = (
                 f"S/ {new_value:,.2f}"
                 if new_value is not None
@@ -502,6 +507,43 @@ def edit_opportunity(
             ),
             commit=False,
         )
+
+        # =================================================
+        # AUTOMATIZACIONES
+        # =================================================
+        #
+        # Cuando cambia la etapa de una oportunidad,
+        # ejecutamos las reglas configuradas para:
+        #
+        # opportunity_stage_changed
+        #
+        # Ejemplo:
+        #
+        # Prospecto -> Propuesta
+        #
+        # Regla:
+        # stage = proposal
+        #
+        # Acción:
+        # crear llamada automáticamente.
+        # =================================================
+
+        if field == "stage":
+            execute_automation_trigger(
+                db=db,
+                trigger_type=(
+                    "opportunity_stage_changed"
+                ),
+                opportunity=opportunity,
+                context={
+                    "stage": str(new_value),
+                    "old_stage": (
+                        str(old_value)
+                        if old_value is not None
+                        else None
+                    ),
+                },
+            )
 
     db.commit()
     db.refresh(opportunity)

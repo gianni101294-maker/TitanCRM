@@ -1,16 +1,34 @@
+from types import SimpleNamespace
+from unittest.mock import MagicMock
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
 from app.auth.dependencies import get_current_user
 from app.core.security import hash_password
 from app.database.session import SessionLocal
 from app.main import app
+from app.models.activity import Activity
 from app.models.automation import AutomationRule
+from app.models.customer import Customer
+from app.models.opportunity import Opportunity
 from app.models.user import User
+from app.schemas.opportunity import OpportunityUpdate
+from app.services.automation_service import (
+    execute_automation_trigger,
+)
+from app.services.opportunity_service import (
+    edit_opportunity,
+)
 
 
 client = TestClient(app)
+
+
+# =========================================================
+# HELPERS
+# =========================================================
 
 
 def create_test_user(role: str) -> User:
@@ -34,6 +52,7 @@ def create_test_user(role: str) -> User:
         db.expunge(user)
 
         return user
+
     finally:
         db.close()
 
@@ -42,11 +61,15 @@ def delete_test_user(user_id: int) -> None:
     db = SessionLocal()
 
     try:
-        user = db.get(User, user_id)
+        user = db.get(
+            User,
+            user_id,
+        )
 
         if user is not None:
             db.delete(user)
             db.commit()
+
     finally:
         db.close()
 
@@ -65,8 +88,72 @@ def delete_test_automation(
         if automation is not None:
             db.delete(automation)
             db.commit()
+
     finally:
         db.close()
+
+
+def delete_test_activity(
+    activity_id: int,
+) -> None:
+    db = SessionLocal()
+
+    try:
+        activity = db.get(
+            Activity,
+            activity_id,
+        )
+
+        if activity is not None:
+            db.delete(activity)
+            db.commit()
+
+    finally:
+        db.close()
+
+
+def delete_test_opportunity(
+    opportunity_id: int,
+) -> None:
+    db = SessionLocal()
+
+    try:
+        opportunity = db.get(
+            Opportunity,
+            opportunity_id,
+        )
+
+        if opportunity is not None:
+            db.delete(opportunity)
+            db.commit()
+
+    finally:
+        db.close()
+
+
+def delete_test_customer(
+    customer_id: int,
+) -> None:
+    db = SessionLocal()
+
+    try:
+        customer = db.get(
+            Customer,
+            customer_id,
+        )
+
+        if customer is not None:
+            db.delete(customer)
+            db.commit()
+
+    finally:
+        db.close()
+
+
+# =========================================================
+# TEST 1
+# SIN AUTENTICACIÓN NO SE PUEDE ACCEDER
+# =========================================================
 
 
 def test_automations_requires_authentication():
@@ -75,6 +162,12 @@ def test_automations_requires_authentication():
     )
 
     assert response.status_code == 401
+
+
+# =========================================================
+# TEST 2
+# SALES NO PUEDE ADMINISTRAR AUTOMATIZACIONES
+# =========================================================
 
 
 def test_sales_cannot_access_automations():
@@ -98,9 +191,16 @@ def test_sales_cannot_access_automations():
 
     finally:
         app.dependency_overrides.clear()
+
         delete_test_user(
             sales_user.id,
         )
+
+
+# =========================================================
+# TEST 3
+# CRUD COMPLETO DE AUTOMATIZACIONES
+# =========================================================
 
 
 def test_admin_automation_crud():
@@ -158,13 +258,21 @@ def test_admin_automation_crud():
             created["name"]
             == "Automatización Test"
         )
-        assert created["is_active"] is True
+
+        assert (
+            created["is_active"]
+            is True
+        )
+
         assert (
             created["created_by"]
             == admin_user.id
         )
 
-        print("Created:", automation_id)
+        print(
+            "Created:",
+            automation_id,
+        )
 
         print("")
         print("===== GET =====")
@@ -173,7 +281,11 @@ def test_admin_automation_crud():
             f"/automations/{automation_id}",
         )
 
-        assert get_response.status_code == 200
+        assert (
+            get_response.status_code
+            == 200
+        )
+
         assert (
             get_response.json()["id"]
             == automation_id
@@ -186,7 +298,10 @@ def test_admin_automation_crud():
             "/automations",
         )
 
-        assert list_response.status_code == 200
+        assert (
+            list_response.status_code
+            == 200
+        )
 
         assert any(
             item["id"] == automation_id
@@ -206,7 +321,10 @@ def test_admin_automation_crud():
             },
         )
 
-        assert patch_response.status_code == 200
+        assert (
+            patch_response.status_code
+            == 200
+        )
 
         updated = patch_response.json()
 
@@ -214,7 +332,11 @@ def test_admin_automation_crud():
             updated["name"]
             == "Automatización Test Editada"
         )
-        assert updated["is_active"] is False
+
+        assert (
+            updated["is_active"]
+            is False
+        )
 
         print("")
         print("===== DELETE =====")
@@ -241,3 +363,518 @@ def test_admin_automation_crud():
         delete_test_user(
             admin_user.id,
         )
+
+
+# =========================================================
+# TEST 4
+# MOTOR DE AUTOMATIZACIONES
+# =========================================================
+
+
+def test_automation_engine_creates_activity():
+    print("")
+    print("===== AUTOMATION ENGINE =====")
+
+    automation = AutomationRule(
+        id=999,
+        name="Seguimiento de propuesta",
+        description=(
+            "Crear llamada cuando una oportunidad "
+            "pase a propuesta."
+        ),
+        trigger_type=(
+            "opportunity_stage_changed"
+        ),
+        conditions={
+            "stage": "proposal",
+        },
+        action_type="create_activity",
+        action_config={
+            "activity_type": "call",
+            "delay_days": 0,
+        },
+        is_active=True,
+    )
+
+    opportunity = SimpleNamespace(
+        id=123,
+        title="Proyecto Domótica Test",
+        customer_id=456,
+    )
+
+    db = MagicMock()
+
+    scalar_result = MagicMock()
+
+    scalar_result.all.return_value = [
+        automation,
+    ]
+
+    db.scalars.return_value = scalar_result
+
+    created_activities = (
+        execute_automation_trigger(
+            db=db,
+            trigger_type=(
+                "opportunity_stage_changed"
+            ),
+            opportunity=opportunity,
+            context={
+                "stage": "proposal",
+            },
+        )
+    )
+
+    assert len(created_activities) == 1
+
+    activity = created_activities[0]
+
+    assert (
+        activity.activity_type
+        == "call"
+    )
+
+    assert (
+        activity.status
+        == "pending"
+    )
+
+    assert (
+        activity.customer_id
+        == 456
+    )
+
+    assert (
+        activity.opportunity_id
+        == 123
+    )
+
+    assert (
+        activity.title
+        == "Llamada: Proyecto Domótica Test"
+    )
+
+    assert (
+        "Seguimiento de propuesta"
+        in activity.description
+    )
+
+    db.add.assert_called_once()
+    db.flush.assert_called_once()
+
+    print(
+        "Actividad creada:",
+        activity.title,
+    )
+
+
+# =========================================================
+# TEST 5
+# NO EJECUTAR SI NO COINCIDE LA ETAPA
+# =========================================================
+
+
+def test_automation_engine_ignores_non_matching_stage():
+    print("")
+    print("===== NON MATCHING CONDITION =====")
+
+    automation = AutomationRule(
+        id=998,
+        name="Seguimiento de propuesta",
+        trigger_type=(
+            "opportunity_stage_changed"
+        ),
+        conditions={
+            "stage": "proposal",
+        },
+        action_type="create_activity",
+        action_config={
+            "activity_type": "call",
+            "delay_days": 0,
+        },
+        is_active=True,
+    )
+
+    opportunity = SimpleNamespace(
+        id=321,
+        title="Proyecto sin propuesta",
+        customer_id=654,
+    )
+
+    db = MagicMock()
+
+    scalar_result = MagicMock()
+
+    scalar_result.all.return_value = [
+        automation,
+    ]
+
+    db.scalars.return_value = scalar_result
+
+    created_activities = (
+        execute_automation_trigger(
+            db=db,
+            trigger_type=(
+                "opportunity_stage_changed"
+            ),
+            opportunity=opportunity,
+            context={
+                "stage": "negotiation",
+            },
+        )
+    )
+
+    assert created_activities == []
+
+    db.add.assert_not_called()
+    db.flush.assert_not_called()
+
+
+# =========================================================
+# TEST 6
+# INTEGRACIÓN REAL CON POSTGRESQL
+# =========================================================
+
+
+def test_stage_change_creates_real_activity():
+    print("")
+    print("===== REAL DATABASE INTEGRATION =====")
+
+    db = SessionLocal()
+
+    customer_id = None
+    opportunity_id = None
+    automation_id = None
+
+    created_activity_ids = []
+
+    try:
+        # -------------------------------------------------
+        # Crear cliente REAL de prueba.
+        # PostgreSQL exige contact_name.
+        # También completamos email y phone.
+        # -------------------------------------------------
+
+        unique_code = uuid4().hex[:8]
+
+        customer = Customer(
+            company_name=(
+                f"Cliente Automatización "
+                f"{unique_code}"
+            ),
+            contact_name=(
+                "Contacto Pytest"
+            ),
+            email=(
+                f"automatizacion_"
+                f"{unique_code}@example.com"
+            ),
+            phone="999999999",
+            is_active=True,
+        )
+
+        db.add(customer)
+        db.commit()
+        db.refresh(customer)
+
+        customer_id = customer.id
+
+        print(
+            "Cliente creado:",
+            customer.id,
+            customer.company_name,
+        )
+
+        # -------------------------------------------------
+        # Crear oportunidad REAL inicialmente
+        # en la etapa prospect.
+        # -------------------------------------------------
+
+        opportunity = Opportunity(
+            title=(
+                "Proyecto Integración Automatización"
+            ),
+            value=10000,
+            stage="prospect",
+            priority="medium",
+            probability=20,
+            notes=(
+                "Oportunidad creada por pytest "
+                "para probar automatizaciones."
+            ),
+            customer_id=customer.id,
+        )
+
+        db.add(opportunity)
+        db.commit()
+        db.refresh(opportunity)
+
+        opportunity_id = opportunity.id
+
+        print(
+            "Oportunidad creada:",
+            opportunity.id,
+            opportunity.stage,
+        )
+
+        # -------------------------------------------------
+        # Crear una regla REAL en PostgreSQL.
+        # -------------------------------------------------
+
+        automation = AutomationRule(
+            name=(
+                "Seguimiento propuesta integración"
+            ),
+            description=(
+                "Regla real de integración pytest"
+            ),
+            trigger_type=(
+                "opportunity_stage_changed"
+            ),
+            conditions={
+                "stage": "proposal",
+            },
+            action_type="create_activity",
+            action_config={
+                "activity_type": "call",
+                "delay_days": 0,
+            },
+            is_active=True,
+        )
+
+        db.add(automation)
+        db.commit()
+        db.refresh(automation)
+
+        automation_id = automation.id
+
+        print(
+            "Automatización creada:",
+            automation.id,
+            automation.name,
+        )
+
+        # -------------------------------------------------
+        # Registrar las actividades que existan ANTES
+        # del cambio de etapa.
+        # -------------------------------------------------
+
+        before_statement = select(
+            Activity.id,
+        ).where(
+            Activity.opportunity_id
+            == opportunity.id,
+        )
+
+        activity_ids_before = set(
+            db.scalars(
+                before_statement,
+            ).all()
+        )
+
+        # -------------------------------------------------
+        # CAMBIO REAL:
+        #
+        # prospect -> proposal
+        #
+        # Aquí debe entrar automáticamente:
+        #
+        # edit_opportunity()
+        # -> execute_automation_trigger()
+        # -> create_activity
+        # -------------------------------------------------
+
+        edited_opportunity = edit_opportunity(
+            db=db,
+            opportunity_id=opportunity.id,
+            opportunity_data=OpportunityUpdate(
+                stage="proposal",
+            ),
+            user_id=None,
+        )
+
+        assert (
+            edited_opportunity.stage
+            == "proposal"
+        )
+
+        # -------------------------------------------------
+        # Buscar actividades creadas DESPUÉS.
+        # -------------------------------------------------
+
+        after_statement = select(
+            Activity,
+        ).where(
+            Activity.opportunity_id
+            == opportunity.id,
+        )
+
+        activities_after = list(
+            db.scalars(
+                after_statement,
+            ).all()
+        )
+
+        new_activities = [
+            activity
+            for activity in activities_after
+            if activity.id
+            not in activity_ids_before
+        ]
+
+        created_activity_ids = [
+            activity.id
+            for activity in new_activities
+        ]
+
+        # -------------------------------------------------
+        # Debe existir al menos una actividad nueva.
+        #
+        # Usamos "al menos una" porque TitanCRM puede
+        # contener otras reglas activas reales.
+        # -------------------------------------------------
+
+        assert len(new_activities) >= 1
+
+        # -------------------------------------------------
+        # Buscar específicamente la actividad creada
+        # por NUESTRA regla de integración.
+        # -------------------------------------------------
+
+        matching_activities = [
+            activity
+            for activity in new_activities
+            if (
+                activity.activity_type == "call"
+                and activity.status == "pending"
+                and activity.customer_id
+                == customer.id
+                and activity.opportunity_id
+                == opportunity.id
+                and (
+                    "Seguimiento propuesta integración"
+                    in (
+                        activity.description
+                        or ""
+                    )
+                )
+            )
+        ]
+
+        assert (
+            len(matching_activities)
+            == 1
+        )
+
+        activity = matching_activities[0]
+
+        assert (
+            activity.title
+            == (
+                "Llamada: "
+                "Proyecto Integración Automatización"
+            )
+        )
+
+        assert (
+            activity.activity_type
+            == "call"
+        )
+
+        assert (
+            activity.status
+            == "pending"
+        )
+
+        assert (
+            activity.customer_id
+            == customer.id
+        )
+
+        assert (
+            activity.opportunity_id
+            == opportunity.id
+        )
+
+        print("")
+        print("===================================")
+        print("AUTOMATIZACIÓN REAL EJECUTADA")
+        print("===================================")
+
+        print(
+            "Oportunidad:",
+            opportunity.id,
+        )
+
+        print(
+            "Nueva etapa:",
+            edited_opportunity.stage,
+        )
+
+        print(
+            "Actividad:",
+            activity.id,
+        )
+
+        print(
+            "Título:",
+            activity.title,
+        )
+
+        print(
+            "Tipo:",
+            activity.activity_type,
+        )
+
+        print(
+            "Estado:",
+            activity.status,
+        )
+
+        print("===================================")
+
+    finally:
+        # -------------------------------------------------
+        # Primero cerramos la sesión principal.
+        # -------------------------------------------------
+
+        db.close()
+
+        # -------------------------------------------------
+        # LIMPIEZA
+        #
+        # Eliminamos primero actividades porque dependen
+        # de la oportunidad.
+        # -------------------------------------------------
+
+        for activity_id in created_activity_ids:
+            delete_test_activity(
+                activity_id,
+            )
+
+        # -------------------------------------------------
+        # Luego la automatización de prueba.
+        # -------------------------------------------------
+
+        if automation_id is not None:
+            delete_test_automation(
+                automation_id,
+            )
+
+        # -------------------------------------------------
+        # Después la oportunidad.
+        # -------------------------------------------------
+
+        if opportunity_id is not None:
+            delete_test_opportunity(
+                opportunity_id,
+            )
+
+        # -------------------------------------------------
+        # Finalmente el cliente.
+        # -------------------------------------------------
+
+        if customer_id is not None:
+            delete_test_customer(
+                customer_id,
+            )
