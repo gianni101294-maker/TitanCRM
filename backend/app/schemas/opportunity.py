@@ -1,138 +1,154 @@
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Literal
 
-from sqlalchemy import (
-    Date,
-    DateTime,
-    ForeignKey,
-    Integer,
-    Numeric,
-    String,
-    Text,
-    func,
-)
-from sqlalchemy.orm import (
-    Mapped,
-    mapped_column,
-    relationship,
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
 )
 
-from app.database.base import Base
+
+OpportunityStage = Literal[
+    "prospect",
+    "contacted",
+    "proposal",
+    "negotiation",
+    "won",
+    "lost",
+]
 
 
-class Opportunity(Base):
-    __tablename__ = "opportunities"
+OpportunityPriority = Literal[
+    "low",
+    "medium",
+    "high",
+]
 
-    id: Mapped[int] = mapped_column(
-        primary_key=True,
-        index=True,
+
+OpportunityLossReason = Literal[
+    "price",
+    "competition",
+    "no_budget",
+    "project_cancelled",
+    "no_response",
+    "other",
+]
+
+
+class OpportunityBase(BaseModel):
+    title: str = Field(
+        min_length=2,
+        max_length=200,
     )
 
-    title: Mapped[str] = mapped_column(
-        String(200),
-        nullable=False,
+    value: Decimal = Field(
+        gt=0,
+        max_digits=12,
+        decimal_places=2,
     )
 
-    value: Mapped[Decimal] = mapped_column(
-        Numeric(12, 2),
-        nullable=False,
-    )
+    stage: OpportunityStage = "prospect"
 
-    stage: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        default="prospect",
-    )
+    priority: OpportunityPriority = "medium"
 
-    priority: Mapped[str] = mapped_column(
-        String(20),
-        nullable=False,
-        default="medium",
-        server_default="medium",
-    )
-
-    probability: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
+    probability: int = Field(
         default=20,
-        server_default="20",
+        ge=0,
+        le=100,
     )
 
-    expected_close_date: Mapped[
-        date | None
-    ] = mapped_column(
-        Date,
-        nullable=True,
+    expected_close_date: date | None = None
+
+    loss_reason: (
+        OpportunityLossReason | None
+    ) = None
+
+    loss_reason_detail: str | None = Field(
+        default=None,
+        max_length=2000,
     )
 
-    loss_reason: Mapped[
-        str | None
-    ] = mapped_column(
-        String(50),
-        nullable=True,
+    notes: str | None = Field(
+        default=None,
+        max_length=5000,
     )
 
-    loss_reason_detail: Mapped[
-        str | None
-    ] = mapped_column(
-        Text,
-        nullable=True,
+    assigned_user_id: int | None = Field(
+        default=None,
+        gt=0,
     )
 
-    notes: Mapped[
-        str | None
-    ] = mapped_column(
-        Text,
-        nullable=True,
+    customer_id: int = Field(
+        gt=0,
     )
 
-    assigned_user_id: Mapped[
-        int | None
-    ] = mapped_column(
-        ForeignKey(
-            "users.id",
-            ondelete="SET NULL",
-        ),
-        nullable=True,
-        index=True,
+
+class OpportunityCreate(
+    OpportunityBase,
+):
+    pass
+
+
+class OpportunityUpdate(BaseModel):
+    title: str | None = Field(
+        default=None,
+        min_length=2,
+        max_length=200,
     )
 
-    customer_id: Mapped[
-        int
-    ] = mapped_column(
-        ForeignKey(
-            "customers.id",
-            ondelete="CASCADE",
-        ),
-        nullable=False,
-        index=True,
+    value: Decimal | None = Field(
+        default=None,
+        gt=0,
+        max_digits=12,
+        decimal_places=2,
     )
 
-    created_at: Mapped[
-        datetime
-    ] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now(),
+    stage: OpportunityStage | None = None
+
+    priority: (
+        OpportunityPriority | None
+    ) = None
+
+    probability: int | None = Field(
+        default=None,
+        ge=0,
+        le=100,
     )
 
-    customer = relationship(
-        "Customer",
-        back_populates="opportunities",
+    expected_close_date: date | None = None
+
+    loss_reason: (
+        OpportunityLossReason | None
+    ) = None
+
+    loss_reason_detail: str | None = Field(
+        default=None,
+        max_length=2000,
     )
 
-    activities = relationship(
-        "Activity",
-        back_populates="opportunity",
-        passive_deletes=True,
+    notes: str | None = Field(
+        default=None,
+        max_length=5000,
     )
 
-    events = relationship(
-        "OpportunityEvent",
-        back_populates="opportunity",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-        order_by=(
-            "OpportunityEvent.created_at.desc()"
-        ),
+    assigned_user_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    customer_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+
+class OpportunityResponse(
+    OpportunityBase,
+):
+    id: int
+    created_at: datetime
+
+    model_config = ConfigDict(
+        from_attributes=True,
     )
