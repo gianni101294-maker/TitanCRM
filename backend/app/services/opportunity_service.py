@@ -17,6 +17,16 @@ from app.services.opportunity_event_service import (
 )
 
 
+LOSS_REASON_LABELS = {
+    "price": "Precio",
+    "competition": "Competencia",
+    "no_budget": "Sin presupuesto",
+    "project_cancelled": "Proyecto cancelado",
+    "no_response": "Sin respuesta",
+    "other": "Otro",
+}
+
+
 def get_opportunity_by_id(
     db: Session,
     opportunity_id: int,
@@ -149,14 +159,51 @@ def register_opportunity(
             "El cliente indicado no existe.",
         )
 
+    loss_reason = (
+        opportunity_data.loss_reason
+    )
+
+    loss_reason_detail = (
+        opportunity_data.loss_reason_detail
+    )
+
+    if (
+        loss_reason_detail
+        is not None
+    ):
+        loss_reason_detail = (
+            loss_reason_detail.strip()
+            or None
+        )
+
+    if (
+        opportunity_data.stage
+        != "lost"
+    ):
+        loss_reason = None
+        loss_reason_detail = None
+
+    elif loss_reason != "other":
+        loss_reason_detail = None
+
     opportunity = Opportunity(
-        title=opportunity_data.title.strip(),
+        title=(
+            opportunity_data.title.strip()
+        ),
         value=opportunity_data.value,
         stage=opportunity_data.stage,
-        priority=opportunity_data.priority,
-        probability=opportunity_data.probability,
+        priority=(
+            opportunity_data.priority
+        ),
+        probability=(
+            opportunity_data.probability
+        ),
         expected_close_date=(
             opportunity_data.expected_close_date
+        ),
+        loss_reason=loss_reason,
+        loss_reason_detail=(
+            loss_reason_detail
         ),
         notes=opportunity_data.notes,
         assigned_user_id=(
@@ -235,6 +282,55 @@ def edit_opportunity(
             ].strip()
         )
 
+    if (
+        "loss_reason_detail"
+        in update_data
+        and update_data[
+            "loss_reason_detail"
+        ]
+        is not None
+    ):
+        update_data[
+            "loss_reason_detail"
+        ] = (
+            update_data[
+                "loss_reason_detail"
+            ].strip()
+            or None
+        )
+
+    resulting_stage = (
+        update_data.get(
+            "stage",
+            opportunity.stage,
+        )
+    )
+
+    if resulting_stage != "lost":
+        update_data[
+            "loss_reason"
+        ] = None
+
+        update_data[
+            "loss_reason_detail"
+        ] = None
+
+    else:
+        resulting_loss_reason = (
+            update_data.get(
+                "loss_reason",
+                opportunity.loss_reason,
+            )
+        )
+
+        if (
+            resulting_loss_reason
+            != "other"
+        ):
+            update_data[
+                "loss_reason_detail"
+            ] = None
+
     tracked_fields = {
         "title": (
             "title_changed",
@@ -265,6 +361,16 @@ def edit_opportunity(
             "close_date_changed",
             "Fecha de cierre modificada",
             "Fecha estimada de cierre",
+        ),
+        "loss_reason": (
+            "loss_reason_changed",
+            "Motivo de pérdida modificado",
+            "Motivo de pérdida",
+        ),
+        "loss_reason_detail": (
+            "loss_reason_detail_changed",
+            "Detalle de pérdida modificado",
+            "Detalle de pérdida",
         ),
         "notes": (
             "notes_changed",
@@ -413,6 +519,43 @@ def edit_opportunity(
                 if new_value
                 is not None
                 else "Sin definir"
+            )
+
+        elif field == "loss_reason":
+            old_display = (
+                LOSS_REASON_LABELS.get(
+                    str(old_value),
+                    str(old_value),
+                )
+                if old_value
+                is not None
+                else "Sin motivo"
+            )
+
+            new_display = (
+                LOSS_REASON_LABELS.get(
+                    str(new_value),
+                    str(new_value),
+                )
+                if new_value
+                is not None
+                else "Sin motivo"
+            )
+
+        elif (
+            field
+            == "loss_reason_detail"
+        ):
+            old_display = (
+                str(old_value)
+                if old_value
+                else "Sin detalle"
+            )
+
+            new_display = (
+                str(new_value)
+                if new_value
+                else "Sin detalle"
             )
 
         elif (
@@ -583,22 +726,6 @@ def edit_opportunity(
             commit=False,
         )
 
-        # =================================================
-        # AUTOMATIZACIONES
-        # =================================================
-        #
-        # El disparador sigue siendo el cambio de etapa.
-        #
-        # Pero ahora el motor también recibe el estado
-        # completo de la oportunidad para poder evaluar:
-        #
-        # - etapa
-        # - prioridad
-        # - probabilidad
-        # - valor
-        #
-        # =================================================
-
         if field == "stage":
             execute_automation_trigger(
                 db=db,
@@ -626,6 +753,9 @@ def edit_opportunity(
                     ),
                     "value": (
                         opportunity.value
+                    ),
+                    "loss_reason": (
+                        opportunity.loss_reason
                     ),
                 },
             )

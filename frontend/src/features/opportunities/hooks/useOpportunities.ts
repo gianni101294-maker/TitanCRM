@@ -29,6 +29,7 @@ import {
   getOpportunityStageData,
 } from "../utils/opportunityStage";
 
+
 const initialForm: OpportunityCreate = {
   title: "",
   value: 0,
@@ -36,10 +37,13 @@ const initialForm: OpportunityCreate = {
   priority: "medium",
   probability: 20,
   expected_close_date: null,
+  loss_reason: null,
+  loss_reason_detail: null,
   notes: null,
   assigned_user_id: null,
   customer_id: 0,
 };
+
 
 export function useOpportunities() {
   const [
@@ -121,6 +125,7 @@ export function useOpportunities() {
     setIsDeleting,
   ] = useState(false);
 
+
   const reloadOpportunities =
     useCallback(
       async () => {
@@ -160,6 +165,7 @@ export function useOpportunities() {
       },
       [],
     );
+
 
   useEffect(() => {
     let isMounted = true;
@@ -212,6 +218,7 @@ export function useOpportunities() {
     };
   }, []);
 
+
   function openCreateDialog() {
     setEditingOpportunity(
       null,
@@ -228,6 +235,7 @@ export function useOpportunities() {
 
     setIsDialogOpen(true);
   }
+
 
   function openEditDialog(
     opportunity: Opportunity,
@@ -257,6 +265,12 @@ export function useOpportunities() {
       expected_close_date:
         opportunity.expected_close_date,
 
+      loss_reason:
+        opportunity.loss_reason,
+
+      loss_reason_detail:
+        opportunity.loss_reason_detail,
+
       notes:
         opportunity.notes,
 
@@ -271,6 +285,7 @@ export function useOpportunities() {
 
     setIsDialogOpen(true);
   }
+
 
   function closeOpportunityDialog() {
     if (!isSaving) {
@@ -288,6 +303,7 @@ export function useOpportunities() {
     }
   }
 
+
   function updateField<
     K extends keyof OpportunityCreate,
   >(
@@ -295,13 +311,46 @@ export function useOpportunities() {
     value: OpportunityCreate[K],
   ) {
     setFormData(
-      (currentForm) => ({
-        ...currentForm,
+      (currentForm) => {
+        const nextForm = {
+          ...currentForm,
+          [field]: value,
+        };
 
-        [field]: value,
-      }),
+        if (field === "stage") {
+          const stageValue =
+            value as OpportunityCreate[
+              "stage"
+            ];
+
+          if (stageValue !== "lost") {
+            nextForm.loss_reason = null;
+            nextForm.loss_reason_detail =
+              null;
+          }
+        }
+
+        if (
+          field === "loss_reason"
+        ) {
+          const reasonValue =
+            value as OpportunityCreate[
+              "loss_reason"
+            ];
+
+          if (
+            reasonValue !== "other"
+          ) {
+            nextForm.loss_reason_detail =
+              null;
+          }
+        }
+
+        return nextForm;
+      },
     );
   }
+
 
   async function saveOpportunity() {
     if (
@@ -346,6 +395,31 @@ export function useOpportunities() {
     }
 
     if (
+      formData.stage === "lost" &&
+      !formData.loss_reason
+    ) {
+      setFormError(
+        "Selecciona el motivo por el que se perdió la oportunidad.",
+      );
+
+      return false;
+    }
+
+    if (
+      formData.stage === "lost" &&
+      formData.loss_reason ===
+        "other" &&
+      !formData.loss_reason_detail
+        ?.trim()
+    ) {
+      setFormError(
+        "Describe el motivo de pérdida cuando seleccionas Otro.",
+      );
+
+      return false;
+    }
+
+    if (
       formData.assigned_user_id !== null
     ) {
       const assignedUser =
@@ -381,6 +455,11 @@ export function useOpportunities() {
         const updateData:
           OpportunityUpdate = {
             ...formData,
+
+            loss_reason_detail:
+              formData.loss_reason_detail
+                ?.trim() ||
+              null,
           };
 
         const updatedOpportunity =
@@ -407,9 +486,14 @@ export function useOpportunities() {
         );
       } else {
         const newOpportunity =
-          await createOpportunity(
-            formData,
-          );
+          await createOpportunity({
+            ...formData,
+
+            loss_reason_detail:
+              formData.loss_reason_detail
+                ?.trim() ||
+              null,
+          });
 
         setOpportunities(
           (
@@ -446,6 +530,7 @@ export function useOpportunities() {
       setIsSaving(false);
     }
   }
+
 
   async function removeOpportunity() {
     if (
@@ -492,6 +577,7 @@ export function useOpportunities() {
     }
   }
 
+
   const getCustomerName =
     useCallback(
       (
@@ -512,6 +598,7 @@ export function useOpportunities() {
       },
       [customers],
     );
+
 
   const getUserName =
     useCallback(
@@ -538,6 +625,7 @@ export function useOpportunities() {
       [users],
     );
 
+
   const activeUsers =
     useMemo(
       () =>
@@ -547,6 +635,7 @@ export function useOpportunities() {
         ),
       [users],
     );
+
 
   const filteredOpportunities =
     useMemo(() => {
@@ -601,6 +690,7 @@ export function useOpportunities() {
       getCustomerName,
       getUserName,
     ]);
+
 
   return {
     opportunities,

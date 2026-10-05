@@ -1,5 +1,6 @@
 import client from "../../../api/client";
 
+
 export type OpportunityStage =
   | "prospect"
   | "contacted"
@@ -8,10 +9,21 @@ export type OpportunityStage =
   | "won"
   | "lost";
 
+
 export type OpportunityPriority =
   | "low"
   | "medium"
   | "high";
+
+
+export type OpportunityLossReason =
+  | "price"
+  | "competition"
+  | "no_budget"
+  | "project_cancelled"
+  | "no_response"
+  | "other";
+
 
 export interface Opportunity {
   id: number;
@@ -28,6 +40,12 @@ export interface Opportunity {
 
   expected_close_date: string | null;
 
+  loss_reason:
+    OpportunityLossReason | null;
+
+  loss_reason_detail:
+    string | null;
+
   notes: string | null;
 
   assigned_user_id: number | null;
@@ -40,13 +58,20 @@ export interface Opportunity {
 
 export interface OpportunityEvent {
   id: number;
+
   opportunity_id: number;
+
   event_type: string;
+
   title: string;
+
   description: string | null;
+
   user_id: number | null;
+
   created_at: string;
 }
+
 
 export interface OpportunityCreate {
   title: string;
@@ -61,12 +86,19 @@ export interface OpportunityCreate {
 
   expected_close_date: string | null;
 
+  loss_reason:
+    OpportunityLossReason | null;
+
+  loss_reason_detail:
+    string | null;
+
   notes: string | null;
 
   assigned_user_id: number | null;
 
   customer_id: number;
 }
+
 
 export interface OpportunityUpdate {
   title: string;
@@ -81,12 +113,19 @@ export interface OpportunityUpdate {
 
   expected_close_date: string | null;
 
+  loss_reason?:
+    OpportunityLossReason | null;
+
+  loss_reason_detail?:
+    string | null;
+
   notes: string | null;
 
   assigned_user_id: number | null;
 
   customer_id: number;
 }
+
 
 export async function getOpportunities():
 Promise<Opportunity[]> {
@@ -97,6 +136,7 @@ Promise<Opportunity[]> {
 
   return response.data;
 }
+
 
 export async function createOpportunity(
   opportunity: OpportunityCreate,
@@ -109,6 +149,7 @@ export async function createOpportunity(
 
   return response.data;
 }
+
 
 export async function updateOpportunity(
   opportunityId: number,
@@ -123,6 +164,7 @@ export async function updateOpportunity(
   return response.data;
 }
 
+
 export async function deleteOpportunity(
   opportunityId: number,
 ): Promise<void> {
@@ -130,6 +172,7 @@ export async function deleteOpportunity(
     `/opportunities/${opportunityId}`,
   );
 }
+
 
 export async function getOpportunityEvents(
   opportunityId: number,
@@ -141,4 +184,3 @@ export async function getOpportunityEvents(
 
   return response.data;
 }
-

@@ -58,17 +58,37 @@ class Opportunity(Base):
         server_default="20",
     )
 
-    expected_close_date: Mapped[date | None] = mapped_column(
+    expected_close_date: Mapped[
+        date | None
+    ] = mapped_column(
         Date,
         nullable=True,
     )
 
-    notes: Mapped[str | None] = mapped_column(
+    loss_reason: Mapped[
+        str | None
+    ] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+
+    loss_reason_detail: Mapped[
+        str | None
+    ] = mapped_column(
         Text,
         nullable=True,
     )
 
-    assigned_user_id: Mapped[int | None] = mapped_column(
+    notes: Mapped[
+        str | None
+    ] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    assigned_user_id: Mapped[
+        int | None
+    ] = mapped_column(
         ForeignKey(
             "users.id",
             ondelete="SET NULL",
@@ -77,7 +97,9 @@ class Opportunity(Base):
         index=True,
     )
 
-    customer_id: Mapped[int] = mapped_column(
+    customer_id: Mapped[
+        int
+    ] = mapped_column(
         ForeignKey(
             "customers.id",
             ondelete="CASCADE",
@@ -86,7 +108,9 @@ class Opportunity(Base):
         index=True,
     )
 
-    created_at: Mapped[datetime] = mapped_column(
+    created_at: Mapped[
+        datetime
+    ] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
@@ -108,5 +132,7 @@ class Opportunity(Base):
         back_populates="opportunity",
         cascade="all, delete-orphan",
         passive_deletes=True,
-        order_by="OpportunityEvent.created_at.desc()",
+        order_by=(
+            "OpportunityEvent.created_at.desc()"
+        ),
     )

@@ -11,6 +11,7 @@ import {
   Percent,
   Person,
   Sell,
+  WarningAmber,
 } from "@mui/icons-material";
 
 import {
@@ -32,6 +33,7 @@ import {
 
 import type {
   Opportunity,
+  OpportunityLossReason,
   OpportunityPriority,
 } from "../api/opportunities";
 
@@ -46,6 +48,7 @@ import {
 import {
   OpportunityHistory,
 } from "./OpportunityHistory";
+
 
 interface OpportunityDetailDialogProps {
   open: boolean;
@@ -66,6 +69,7 @@ interface OpportunityDetailDialogProps {
   ) => void;
 }
 
+
 interface DetailItemProps {
   icon: ReactNode;
 
@@ -73,6 +77,7 @@ interface DetailItemProps {
 
   children: ReactNode;
 }
+
 
 function formatCurrency(
   value:
@@ -90,6 +95,7 @@ function formatCurrency(
     },
   );
 }
+
 
 function formatDate(
   value:
@@ -129,6 +135,7 @@ function formatDate(
   );
 }
 
+
 function formatCreatedAt(
   value: string,
 ) {
@@ -155,6 +162,7 @@ function formatCreatedAt(
   );
 }
 
+
 function getPriorityLabel(
   priority:
     OpportunityPriority,
@@ -175,6 +183,36 @@ function getPriorityLabel(
       return priority;
   }
 }
+
+
+function getLossReasonLabel(
+  reason:
+    OpportunityLossReason | null,
+) {
+  switch (reason) {
+    case "price":
+      return "Precio";
+
+    case "competition":
+      return "Competencia";
+
+    case "no_budget":
+      return "Sin presupuesto";
+
+    case "project_cancelled":
+      return "Proyecto cancelado";
+
+    case "no_response":
+      return "Sin respuesta";
+
+    case "other":
+      return "Otro";
+
+    default:
+      return "Sin motivo registrado";
+  }
+}
+
 
 function DetailItem({
   icon,
@@ -224,6 +262,7 @@ function DetailItem({
     </Box>
   );
 }
+
 
 export function OpportunityDetailDialog({
   open,
@@ -420,6 +459,56 @@ export function OpportunityDetailDialog({
               </DetailItem>
             </Stack>
           </Paper>
+
+          {opportunity.stage ===
+            "lost" && (
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 3,
+                borderRadius: 3,
+              }}
+            >
+              <DetailItem
+                icon={
+                  <WarningAmber />
+                }
+                label="Motivo de pérdida"
+              >
+                <Stack
+                  spacing={1}
+                >
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                    }}
+                  >
+                    {getLossReasonLabel(
+                      opportunity.loss_reason,
+                    )}
+                  </Typography>
+
+                  {opportunity.loss_reason ===
+                    "other" &&
+                    opportunity.loss_reason_detail && (
+                      <Typography
+                        color="text.secondary"
+                        sx={{
+                          whiteSpace:
+                            "pre-wrap",
+                          overflowWrap:
+                            "anywhere",
+                        }}
+                      >
+                        {
+                          opportunity.loss_reason_detail
+                        }
+                      </Typography>
+                    )}
+                </Stack>
+              </DetailItem>
+            </Paper>
+          )}
 
           <Paper
             variant="outlined"

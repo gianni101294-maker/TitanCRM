@@ -31,6 +31,7 @@ import type {
 import type {
   Opportunity,
   OpportunityCreate,
+  OpportunityLossReason,
   OpportunityPriority,
   OpportunityStage,
 } from "../api/opportunities";
@@ -38,6 +39,7 @@ import type {
 import {
   opportunityStageOptions,
 } from "../utils/opportunityStage";
+
 
 interface OpportunityFormDialogProps {
   open: boolean;
@@ -75,6 +77,38 @@ interface OpportunityFormDialogProps {
     value: OpportunityCreate[K],
   ) => void;
 }
+
+
+const lossReasonOptions: {
+  value: OpportunityLossReason;
+  label: string;
+}[] = [
+  {
+    value: "price",
+    label: "Precio",
+  },
+  {
+    value: "competition",
+    label: "Competencia",
+  },
+  {
+    value: "no_budget",
+    label: "Sin presupuesto",
+  },
+  {
+    value: "project_cancelled",
+    label: "Proyecto cancelado",
+  },
+  {
+    value: "no_response",
+    label: "Sin respuesta",
+  },
+  {
+    value: "other",
+    label: "Otro",
+  },
+];
+
 
 export function OpportunityFormDialog({
   open,
@@ -291,6 +325,80 @@ export function OpportunityFormDialog({
               ),
             )}
           </TextField>
+
+          {formData.stage ===
+            "lost" && (
+            <>
+              <TextField
+                fullWidth
+                select
+                label="Motivo de pérdida"
+                value={
+                  formData.loss_reason ??
+                  ""
+                }
+                onChange={(event) =>
+                  onFieldChange(
+                    "loss_reason",
+                    (
+                      event.target.value ||
+                      null
+                    ) as
+                      | OpportunityLossReason
+                      | null,
+                  )
+                }
+                required
+                margin="normal"
+                helperText="Indica la razón principal por la que se perdió la oportunidad."
+              >
+                <MenuItem value="">
+                  Seleccionar motivo
+                </MenuItem>
+
+                {lossReasonOptions.map(
+                  (reason) => (
+                    <MenuItem
+                      key={
+                        reason.value
+                      }
+                      value={
+                        reason.value
+                      }
+                    >
+                      {
+                        reason.label
+                      }
+                    </MenuItem>
+                  ),
+                )}
+              </TextField>
+
+              {formData.loss_reason ===
+                "other" && (
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  label="Detalle del motivo"
+                  value={
+                    formData.loss_reason_detail ??
+                    ""
+                  }
+                  onChange={(event) =>
+                    onFieldChange(
+                      "loss_reason_detail",
+                      event.target.value ||
+                        null,
+                    )
+                  }
+                  required
+                  margin="normal"
+                  helperText="Describe brevemente por qué se perdió esta oportunidad."
+                />
+              )}
+            </>
+          )}
 
           <TextField
             fullWidth
