@@ -21,33 +21,48 @@ def get_opportunity_by_id(
     db: Session,
     opportunity_id: int,
 ) -> Opportunity | None:
-    statement = select(Opportunity).where(
-        Opportunity.id == opportunity_id,
+    statement = select(
+        Opportunity,
+    ).where(
+        Opportunity.id
+        == opportunity_id,
     )
 
-    return db.scalar(statement)
+    return db.scalar(
+        statement,
+    )
 
 
 def get_customer_by_id(
     db: Session,
     customer_id: int,
 ) -> Customer | None:
-    statement = select(Customer).where(
-        Customer.id == customer_id,
+    statement = select(
+        Customer,
+    ).where(
+        Customer.id
+        == customer_id,
     )
 
-    return db.scalar(statement)
+    return db.scalar(
+        statement,
+    )
 
 
 def get_user_by_id(
     db: Session,
     user_id: int,
 ) -> User | None:
-    statement = select(User).where(
-        User.id == user_id,
+    statement = select(
+        User,
+    ).where(
+        User.id
+        == user_id,
     )
 
-    return db.scalar(statement)
+    return db.scalar(
+        statement,
+    )
 
 
 def list_opportunities(
@@ -60,7 +75,9 @@ def list_opportunities(
     )
 
     return list(
-        db.scalars(statement).all(),
+        db.scalars(
+            statement,
+        ).all(),
     )
 
 
@@ -79,7 +96,9 @@ def list_customer_opportunities(
         )
 
     statement = (
-        select(Opportunity)
+        select(
+            Opportunity,
+        )
         .where(
             Opportunity.customer_id
             == customer_id,
@@ -90,7 +109,9 @@ def list_customer_opportunities(
     )
 
     return list(
-        db.scalars(statement).all(),
+        db.scalars(
+            statement,
+        ).all(),
     )
 
 
@@ -98,9 +119,11 @@ def get_opportunity(
     db: Session,
     opportunity_id: int,
 ) -> Opportunity:
-    opportunity = get_opportunity_by_id(
-        db,
-        opportunity_id,
+    opportunity = (
+        get_opportunity_by_id(
+            db,
+            opportunity_id,
+        )
     )
 
     if opportunity is None:
@@ -139,10 +162,15 @@ def register_opportunity(
         assigned_user_id=(
             opportunity_data.assigned_user_id
         ),
-        customer_id=opportunity_data.customer_id,
+        customer_id=(
+            opportunity_data.customer_id
+        ),
     )
 
-    db.add(opportunity)
+    db.add(
+        opportunity,
+    )
+
     db.flush()
 
     create_opportunity_event(
@@ -159,7 +187,9 @@ def register_opportunity(
     )
 
     db.commit()
-    db.refresh(opportunity)
+    db.refresh(
+        opportunity,
+    )
 
     return opportunity
 
@@ -175,14 +205,18 @@ def edit_opportunity(
         opportunity_id,
     )
 
-    update_data = opportunity_data.model_dump(
-        exclude_unset=True,
+    update_data = (
+        opportunity_data.model_dump(
+            exclude_unset=True,
+        )
     )
 
     if "customer_id" in update_data:
         customer = get_customer_by_id(
             db,
-            update_data["customer_id"],
+            update_data[
+                "customer_id"
+            ],
         )
 
         if customer is None:
@@ -192,10 +226,13 @@ def edit_opportunity(
 
     if (
         "title" in update_data
-        and update_data["title"] is not None
+        and update_data["title"]
+        is not None
     ):
         update_data["title"] = (
-            update_data["title"].strip()
+            update_data[
+                "title"
+            ].strip()
         )
 
     tracked_fields = {
@@ -271,9 +308,15 @@ def edit_opportunity(
 
     db.flush()
 
-    for field, old_value, new_value in changes:
-        event_config = tracked_fields.get(
-            field
+    for (
+        field,
+        old_value,
+        new_value,
+    ) in changes:
+        event_config = (
+            tracked_fields.get(
+                field,
+            )
         )
 
         if event_config is None:
@@ -288,26 +331,30 @@ def edit_opportunity(
         if field == "probability":
             old_display = (
                 f"{old_value}%"
-                if old_value is not None
+                if old_value
+                is not None
                 else "Sin definir"
             )
 
             new_display = (
                 f"{new_value}%"
-                if new_value is not None
+                if new_value
+                is not None
                 else "Sin definir"
             )
 
         elif field == "value":
             old_display = (
                 f"S/ {old_value:,.2f}"
-                if old_value is not None
+                if old_value
+                is not None
                 else "Sin definir"
             )
 
             new_display = (
                 f"S/ {new_value:,.2f}"
-                if new_value is not None
+                if new_value
+                is not None
                 else "Sin definir"
             )
 
@@ -326,7 +373,8 @@ def edit_opportunity(
                     str(old_value),
                     str(old_value),
                 )
-                if old_value is not None
+                if old_value
+                is not None
                 else "Sin definir"
             )
 
@@ -335,7 +383,8 @@ def edit_opportunity(
                     str(new_value),
                     str(new_value),
                 )
-                if new_value is not None
+                if new_value
+                is not None
                 else "Sin definir"
             )
 
@@ -351,7 +400,8 @@ def edit_opportunity(
                     str(old_value),
                     str(old_value),
                 )
-                if old_value is not None
+                if old_value
+                is not None
                 else "Sin definir"
             )
 
@@ -360,34 +410,44 @@ def edit_opportunity(
                     str(new_value),
                     str(new_value),
                 )
-                if new_value is not None
+                if new_value
+                is not None
                 else "Sin definir"
             )
 
-        elif field == "expected_close_date":
+        elif (
+            field
+            == "expected_close_date"
+        ):
             old_display = (
                 old_value.strftime(
-                    "%d/%m/%Y"
+                    "%d/%m/%Y",
                 )
-                if old_value is not None
+                if old_value
+                is not None
                 else "Sin fecha"
             )
 
             new_display = (
                 new_value.strftime(
-                    "%d/%m/%Y"
+                    "%d/%m/%Y",
                 )
-                if new_value is not None
+                if new_value
+                is not None
                 else "Sin fecha"
             )
 
-        elif field == "assigned_user_id":
+        elif (
+            field
+            == "assigned_user_id"
+        ):
             old_user = (
                 get_user_by_id(
                     db,
                     old_value,
                 )
-                if old_value is not None
+                if old_value
+                is not None
                 else None
             )
 
@@ -396,19 +456,22 @@ def edit_opportunity(
                     db,
                     new_value,
                 )
-                if new_value is not None
+                if new_value
+                is not None
                 else None
             )
 
             old_display = (
                 old_user.full_name
-                if old_user is not None
+                if old_user
+                is not None
                 else "Sin responsable"
             )
 
             new_display = (
                 new_user.full_name
-                if new_user is not None
+                if new_user
+                is not None
                 else "Sin responsable"
             )
 
@@ -418,7 +481,8 @@ def edit_opportunity(
                     db,
                     old_value,
                 )
-                if old_value is not None
+                if old_value
+                is not None
                 else None
             )
 
@@ -427,19 +491,22 @@ def edit_opportunity(
                     db,
                     new_value,
                 )
-                if new_value is not None
+                if new_value
+                is not None
                 else None
             )
 
             old_display = (
                 old_customer.company_name
-                if old_customer is not None
+                if old_customer
+                is not None
                 else "Sin cliente"
             )
 
             new_display = (
                 new_customer.company_name
-                if new_customer is not None
+                if new_customer
+                is not None
                 else "Sin cliente"
             )
 
@@ -472,13 +539,15 @@ def edit_opportunity(
         else:
             old_display = (
                 str(old_value)
-                if old_value is not None
+                if old_value
+                is not None
                 else "Sin definir"
             )
 
             new_display = (
                 str(new_value)
-                if new_value is not None
+                if new_value
+                is not None
                 else "Sin definir"
             )
 
@@ -495,14 +564,20 @@ def edit_opportunity(
             user_id=user_id,
             old_stage=(
                 str(old_value)
-                if field == "stage"
-                and old_value is not None
+                if (
+                    field == "stage"
+                    and old_value
+                    is not None
+                )
                 else None
             ),
             new_stage=(
                 str(new_value)
-                if field == "stage"
-                and new_value is not None
+                if (
+                    field == "stage"
+                    and new_value
+                    is not None
+                )
                 else None
             ),
             commit=False,
@@ -512,20 +587,16 @@ def edit_opportunity(
         # AUTOMATIZACIONES
         # =================================================
         #
-        # Cuando cambia la etapa de una oportunidad,
-        # ejecutamos las reglas configuradas para:
+        # El disparador sigue siendo el cambio de etapa.
         #
-        # opportunity_stage_changed
+        # Pero ahora el motor también recibe el estado
+        # completo de la oportunidad para poder evaluar:
         #
-        # Ejemplo:
+        # - etapa
+        # - prioridad
+        # - probabilidad
+        # - valor
         #
-        # Prospecto -> Propuesta
-        #
-        # Regla:
-        # stage = proposal
-        #
-        # Acción:
-        # crear llamada automáticamente.
         # =================================================
 
         if field == "stage":
@@ -536,17 +607,33 @@ def edit_opportunity(
                 ),
                 opportunity=opportunity,
                 context={
-                    "stage": str(new_value),
+                    "stage": str(
+                        new_value,
+                    ),
                     "old_stage": (
-                        str(old_value)
-                        if old_value is not None
+                        str(
+                            old_value,
+                        )
+                        if old_value
+                        is not None
                         else None
+                    ),
+                    "priority": (
+                        opportunity.priority
+                    ),
+                    "probability": (
+                        opportunity.probability
+                    ),
+                    "value": (
+                        opportunity.value
                     ),
                 },
             )
 
     db.commit()
-    db.refresh(opportunity)
+    db.refresh(
+        opportunity,
+    )
 
     return opportunity
 
@@ -560,5 +647,8 @@ def remove_opportunity(
         opportunity_id,
     )
 
-    db.delete(opportunity)
+    db.delete(
+        opportunity,
+    )
+
     db.commit()

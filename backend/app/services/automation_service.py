@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal, InvalidOperation
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -114,6 +115,71 @@ def delete_automation_rule(
 # =========================================================
 
 
+def _to_decimal(
+    value: object,
+) -> Decimal | None:
+    """
+    Convierte números recibidos desde Python, PostgreSQL
+    o JSON a Decimal para poder compararlos de forma segura.
+    """
+
+    if value is None:
+        return None
+
+    try:
+        return Decimal(
+            str(value),
+        )
+    except (
+        InvalidOperation,
+        ValueError,
+        TypeError,
+    ):
+        return None
+
+
+def _numeric_condition_matches(
+    actual_value: object,
+    expected_value: object,
+    operator: str,
+) -> bool:
+    """
+    Evalúa una condición numérica.
+
+    Operadores soportados:
+    - min: actual >= esperado
+    - max: actual <= esperado
+    """
+
+    actual_number = _to_decimal(
+        actual_value,
+    )
+
+    expected_number = _to_decimal(
+        expected_value,
+    )
+
+    if (
+        actual_number is None
+        or expected_number is None
+    ):
+        return False
+
+    if operator == "min":
+        return (
+            actual_number
+            >= expected_number
+        )
+
+    if operator == "max":
+        return (
+            actual_number
+            <= expected_number
+        )
+
+    return False
+
+
 def _conditions_match(
     automation: AutomationRule,
     context: dict,
@@ -121,12 +187,79 @@ def _conditions_match(
     """
     Comprueba si todas las condiciones configuradas
     en una regla coinciden con el contexto recibido.
+
+    Condiciones de igualdad:
+    - stage
+    - old_stage
+    - priority
+
+    Condiciones numéricas:
+    - probability_min
+    - probability_max
+    - value_min
+    - value_max
+
+    Cualquier otra condición conserva el comportamiento
+    anterior y se compara mediante igualdad.
     """
 
-    conditions = automation.conditions or {}
+    conditions = (
+        automation.conditions
+        or {}
+    )
 
     for field, expected_value in conditions.items():
-        actual_value = context.get(field)
+        if field == "probability_min":
+            if not _numeric_condition_matches(
+                actual_value=context.get(
+                    "probability",
+                ),
+                expected_value=expected_value,
+                operator="min",
+            ):
+                return False
+
+            continue
+
+        if field == "probability_max":
+            if not _numeric_condition_matches(
+                actual_value=context.get(
+                    "probability",
+                ),
+                expected_value=expected_value,
+                operator="max",
+            ):
+                return False
+
+            continue
+
+        if field == "value_min":
+            if not _numeric_condition_matches(
+                actual_value=context.get(
+                    "value",
+                ),
+                expected_value=expected_value,
+                operator="min",
+            ):
+                return False
+
+            continue
+
+        if field == "value_max":
+            if not _numeric_condition_matches(
+                actual_value=context.get(
+                    "value",
+                ),
+                expected_value=expected_value,
+                operator="max",
+            ):
+                return False
+
+            continue
+
+        actual_value = context.get(
+            field,
+        )
 
         if actual_value != expected_value:
             return False
@@ -146,7 +279,10 @@ def _create_activity_action(
     pero esta función no realiza commit.
     """
 
-    config = automation.action_config or {}
+    config = (
+        automation.action_config
+        or {}
+    )
 
     activity_type = config.get(
         "activity_type",
@@ -158,7 +294,9 @@ def _create_activity_action(
         0,
     )
 
-    title = config.get("title")
+    title = config.get(
+        "title",
+    )
 
     if not title:
         activity_labels = {
@@ -190,7 +328,9 @@ def _create_activity_action(
 
     scheduled_at = (
         datetime.now(UTC)
-        + timedelta(days=delay_days)
+        + timedelta(
+            days=delay_days,
+        )
     )
 
     activity = Activity(
@@ -219,32 +359,37 @@ def execute_automation_trigger(
     Ejecuta todas las reglas activas correspondientes
     al trigger recibido.
 
-    Ejemplo:
+    Ejemplo de contexto:
 
-    trigger_type:
-        opportunity_stage_changed
+    {
+        "stage": "proposal",
+        "old_stage": "contacted",
+        "priority": "high",
+        "probability": 70,
+        "value": 25000,
+    }
 
-    context:
-        {
-            "stage": "proposal"
-        }
-
-    Si una regla cumple sus condiciones y su acción es
-    create_activity, se genera automáticamente una actividad.
+    Si todas las condiciones de una regla se cumplen,
+    ejecuta la acción correspondiente.
     """
 
     statement = select(
         AutomationRule,
     ).where(
         AutomationRule.is_active.is_(True),
-        AutomationRule.trigger_type == trigger_type,
+        AutomationRule.trigger_type
+        == trigger_type,
     )
 
     automations = list(
-        db.scalars(statement).all(),
+        db.scalars(
+            statement,
+        ).all(),
     )
 
-    created_activities: list[Activity] = []
+    created_activities: list[
+        Activity
+    ] = []
 
     for automation in automations:
         if not _conditions_match(
@@ -253,11 +398,16 @@ def execute_automation_trigger(
         ):
             continue
 
-        if automation.action_type == "create_activity":
-            activity = _create_activity_action(
-                db=db,
-                automation=automation,
-                opportunity=opportunity,
+        if (
+            automation.action_type
+            == "create_activity"
+        ):
+            activity = (
+                _create_activity_action(
+                    db=db,
+                    automation=automation,
+                    opportunity=opportunity,
+                )
             )
 
             created_activities.append(

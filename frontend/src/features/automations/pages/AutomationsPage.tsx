@@ -50,6 +50,16 @@ import {
 } from "@/features/opportunities/utils/opportunityStage";
 
 
+const priorityLabels: Record<
+  string,
+  string
+> = {
+  low: "Baja",
+  medium: "Media",
+  high: "Alta",
+};
+
+
 const initialFormData: AutomationRuleCreate = {
   name: "",
   description: null,
@@ -83,9 +93,9 @@ function getErrorMessage(
   error: unknown,
 ): string {
   if (
-    typeof error === "object" &&
-    error !== null &&
-    "response" in error
+    typeof error === "object"
+    && error !== null
+    && "response" in error
   ) {
     const response = (
       error as {
@@ -109,7 +119,8 @@ function getErrorMessage(
 function getStageLabel(
   automation: AutomationRule,
 ): string {
-  const stage = automation.conditions.stage;
+  const stage =
+    automation.conditions.stage;
 
   if (typeof stage !== "string") {
     return "Sin condición";
@@ -117,7 +128,8 @@ function getStageLabel(
 
   const option =
     opportunityStageOptions.find(
-      (item) => item.value === stage,
+      (item) =>
+        item.value === stage,
     );
 
   return option?.label ?? stage;
@@ -130,7 +142,9 @@ function getActivityTypeLabel(
   const activityType =
     automation.action_config.activity_type;
 
-  if (typeof activityType !== "string") {
+  if (
+    typeof activityType !== "string"
+  ) {
     return "Actividad";
   }
 
@@ -140,7 +154,10 @@ function getActivityTypeLabel(
         item.value === activityType,
     );
 
-  return option?.label ?? activityType;
+  return (
+    option?.label
+    ?? activityType
+  );
 }
 
 
@@ -186,6 +203,53 @@ function getActionSummary(
       automation,
     ),
   ].join(" · ");
+}
+
+
+function getExtraConditions(
+  automation: AutomationRule,
+): string[] {
+  const conditions: string[] = [];
+
+  const priority =
+    automation.conditions.priority;
+
+  if (
+    typeof priority === "string"
+  ) {
+    conditions.push(
+      `Prioridad: ${
+        priorityLabels[priority]
+        ?? priority
+      }`,
+    );
+  }
+
+  const probabilityMin =
+    automation.conditions.probability_min;
+
+  if (
+    typeof probabilityMin === "number"
+  ) {
+    conditions.push(
+      `Probabilidad ≥ ${probabilityMin}%`,
+    );
+  }
+
+  const valueMin =
+    automation.conditions.value_min;
+
+  if (
+    typeof valueMin === "number"
+  ) {
+    conditions.push(
+      `Valor ≥ S/ ${valueMin.toLocaleString(
+        "es-PE",
+      )}`,
+    );
+  }
+
+  return conditions;
 }
 
 
@@ -405,121 +469,151 @@ export function AutomationsPage() {
       ) : (
         <Stack spacing={2}>
           {automations.map(
-            (automation) => (
-              <Card
-                key={automation.id}
-                variant="outlined"
-                sx={{
-                  borderRadius: 3,
-                }}
-              >
-                <CardContent>
-                  <Stack
-                    direction={{
-                      xs: "column",
-                      sm: "row",
-                    }}
-                    spacing={2}
-                    sx={{
-                      justifyContent:
-                        "space-between",
-                    }}
-                  >
-                    <Box>
-                      <Typography
-                        variant="h6"
-                        sx={{
-                          fontWeight: 700,
-                        }}
-                      >
-                        {automation.name}
-                      </Typography>
+            (automation) => {
+              const extraConditions =
+                getExtraConditions(
+                  automation,
+                );
 
-                      {automation.description && (
+              return (
+                <Card
+                  key={automation.id}
+                  variant="outlined"
+                  sx={{
+                    borderRadius: 3,
+                  }}
+                >
+                  <CardContent>
+                    <Stack
+                      direction={{
+                        xs: "column",
+                        sm: "row",
+                      }}
+                      spacing={2}
+                      sx={{
+                        justifyContent:
+                          "space-between",
+                      }}
+                    >
+                      <Box>
                         <Typography
-                          color="text.secondary"
+                          variant="h6"
+                          sx={{
+                            fontWeight: 700,
+                          }}
+                        >
+                          {automation.name}
+                        </Typography>
+
+                        {automation.description && (
+                          <Typography
+                            color="text.secondary"
+                            sx={{
+                              mt: 0.5,
+                            }}
+                          >
+                            {
+                              automation.description
+                            }
+                          </Typography>
+                        )}
+
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            mt: 2,
+                          }}
+                        >
+                          <strong>
+                            Cuando:
+                          </strong>{" "}
+                          cambie la etapa de una
+                          oportunidad
+                        </Typography>
+
+                        <Typography
+                          variant="body2"
                           sx={{
                             mt: 0.5,
                           }}
                         >
-                          {
-                            automation.description
-                          }
+                          <strong>
+                            Si:
+                          </strong>{" "}
+                          la nueva etapa es{" "}
+                          <strong>
+                            {
+                              getStageLabel(
+                                automation,
+                              )
+                            }
+                          </strong>
                         </Typography>
-                      )}
 
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          mt: 2,
-                        }}
-                      >
-                        <strong>
-                          Cuando:
-                        </strong>{" "}
-                        cambie la etapa de una
-                        oportunidad
-                      </Typography>
+                        {extraConditions.length > 0 && (
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            useFlexGap
+                            sx={{
+                              mt: 1.5,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            {extraConditions.map(
+                              (condition) => (
+                                <Chip
+                                  key={condition}
+                                  label={condition}
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              ),
+                            )}
+                          </Stack>
+                        )}
 
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          mt: 0.5,
-                        }}
-                      >
-                        <strong>
-                          Si:
-                        </strong>{" "}
-                        la nueva etapa es{" "}
-                        <strong>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            mt: 1.5,
+                          }}
+                        >
+                          <strong>
+                            Entonces:
+                          </strong>{" "}
                           {
-                            getStageLabel(
+                            getActionSummary(
                               automation,
                             )
                           }
-                        </strong>
-                      </Typography>
+                        </Typography>
+                      </Box>
 
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          mt: 0.5,
-                        }}
-                      >
-                        <strong>
-                          Entonces:
-                        </strong>{" "}
-                        {
-                          getActionSummary(
-                            automation,
-                          )
-                        }
-                      </Typography>
-                    </Box>
-
-                    <Box>
-                      <Chip
-                        label={
-                          automation.is_active
-                            ? "Activa"
-                            : "Inactiva"
-                        }
-                        color={
-                          automation.is_active
-                            ? "success"
-                            : "default"
-                        }
-                        variant={
-                          automation.is_active
-                            ? "filled"
-                            : "outlined"
-                        }
-                      />
-                    </Box>
-                  </Stack>
-                </CardContent>
-              </Card>
-            ),
+                      <Box>
+                        <Chip
+                          label={
+                            automation.is_active
+                              ? "Activa"
+                              : "Inactiva"
+                          }
+                          color={
+                            automation.is_active
+                              ? "success"
+                              : "default"
+                          }
+                          variant={
+                            automation.is_active
+                              ? "filled"
+                              : "outlined"
+                          }
+                        />
+                      </Box>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              );
+            },
           )}
         </Stack>
       )}

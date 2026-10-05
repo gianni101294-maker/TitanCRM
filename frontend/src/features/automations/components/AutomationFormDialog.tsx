@@ -77,6 +77,22 @@ const delayOptions = [
 ];
 
 
+const priorityOptions = [
+  {
+    label: "Baja",
+    value: "low",
+  },
+  {
+    label: "Media",
+    value: "medium",
+  },
+  {
+    label: "Alta",
+    value: "high",
+  },
+];
+
+
 export function AutomationFormDialog({
   open,
   automation,
@@ -93,6 +109,23 @@ export function AutomationFormDialog({
     typeof formData.conditions.stage === "string"
       ? formData.conditions.stage
       : "proposal";
+
+  const priority =
+    typeof formData.conditions.priority === "string"
+      ? formData.conditions.priority
+      : "";
+
+  const probabilityMin =
+    typeof formData.conditions.probability_min ===
+    "number"
+      ? formData.conditions.probability_min
+      : "";
+
+  const valueMin =
+    typeof formData.conditions.value_min ===
+    "number"
+      ? formData.conditions.value_min
+      : "";
 
   const activityType =
     typeof formData.action_config.activity_type ===
@@ -131,6 +164,31 @@ export function AutomationFormDialog({
         ...formData.conditions,
         stage: value,
       },
+    );
+  }
+
+
+  function changeOptionalCondition(
+    field: string,
+    value: unknown,
+  ) {
+    const conditions = {
+      ...formData.conditions,
+    };
+
+    if (
+      value === ""
+      || value === null
+      || value === undefined
+    ) {
+      delete conditions[field];
+    } else {
+      conditions[field] = value;
+    }
+
+    onFieldChange(
+      "conditions",
+      conditions,
     );
   }
 
@@ -318,10 +376,129 @@ export function AutomationFormDialog({
             )}
           </TextField>
 
+          <Box
+            sx={{
+              mt: 2,
+              p: 2,
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 2,
+              backgroundColor: "background.default",
+            }}
+          >
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 700,
+              }}
+            >
+              Condiciones adicionales
+            </Typography>
+
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                mt: 0.5,
+                mb: 1,
+              }}
+            >
+              Son opcionales. Si agregas varias,
+              todas deberán cumplirse para ejecutar
+              la automatización.
+            </Typography>
+
+            <TextField
+              fullWidth
+              select
+              label="Prioridad"
+              value={priority}
+              onChange={(event) =>
+                changeOptionalCondition(
+                  "priority",
+                  event.target.value,
+                )
+              }
+              margin="normal"
+            >
+              <MenuItem value="">
+                Cualquier prioridad
+              </MenuItem>
+
+              {priorityOptions.map(
+                (option) => (
+                  <MenuItem
+                    key={option.value}
+                    value={option.value}
+                  >
+                    {option.label}
+                  </MenuItem>
+                ),
+              )}
+            </TextField>
+
+            <TextField
+              fullWidth
+              type="number"
+              label="Probabilidad mínima"
+              value={probabilityMin}
+              onChange={(event) => {
+                const value =
+                  event.target.value;
+
+                changeOptionalCondition(
+                  "probability_min",
+                  value === ""
+                    ? ""
+                    : Number(value),
+                );
+              }}
+              helperText={
+                "Ejemplo: 60 significa una probabilidad igual o mayor al 60 %."
+              }
+              margin="normal"
+              slotProps={{
+                htmlInput: {
+                  min: 0,
+                  max: 100,
+                  step: 1,
+                },
+              }}
+            />
+
+            <TextField
+              fullWidth
+              type="number"
+              label="Valor mínimo de oportunidad (S/)"
+              value={valueMin}
+              onChange={(event) => {
+                const value =
+                  event.target.value;
+
+                changeOptionalCondition(
+                  "value_min",
+                  value === ""
+                    ? ""
+                    : Number(value),
+                );
+              }}
+              helperText={
+                "Ejemplo: 20000 ejecutará la regla para oportunidades de S/ 20,000 o más."
+              }
+              margin="normal"
+              slotProps={{
+                htmlInput: {
+                  min: 0,
+                  step: 0.01,
+                },
+              }}
+            />
+          </Box>
+
           <Typography
             variant="subtitle1"
             sx={{
-              mt: 2,
+              mt: 3,
               fontWeight: 700,
             }}
           >
